@@ -1,0 +1,3 @@
+- Title displays variables
+- Game canvas spawns a shit ton of circles
+- Button panel has functional buttons

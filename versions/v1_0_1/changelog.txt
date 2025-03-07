@@ -1,0 +1,6 @@
+- Background updated
+- Container added
+- Title added
+- Game canvas added
+- Button panel added
+- Game canvas simply changes color

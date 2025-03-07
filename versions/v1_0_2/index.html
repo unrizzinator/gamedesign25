@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <script src="script.js" defer></script>
+    <title>Animation v1.0.2</title>
+</head>
+<body class="dotted-bg">
+    <div class="container">
+        <div class="title">Find the square</div>
+        <canvas id="canvas"></canvas>
+        <div class="panel">
+            <button onclick="updateSetting('framerate', 10)">10 FPS</button>
+            <button onclick="updateSetting('framerate', 30)">30 FPS</button>
+            <button onclick="updateSetting('framerate', 60)">60 FPS</button>
+            <button onclick="updateSetting('framerate', 120)">120 FPS</button>
+            <button onclick="pause()">Pause</button>
+        </div>
+    </div>
+</body>
+</html>

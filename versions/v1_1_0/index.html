@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <script src="script.js" defer></script>
+    <title>Animation v1.1.0</title>
+</head>
+<body class="dotted-bg">
+    <div class="container">
+        <div class="title">Game</div>
+        <div class="game-container">
+            <canvas></canvas>
+            <div id="gameEditor">
+                <button></button>
+                <button></button>
+                <button></button>
+                <button></button>
+            </div>
+        </div>
+        <div class="panel">
+            <button onclick="reset()">Reset (R)</button>
+            <button onclick="pause()">Pause (P)</button>
+            <button onclick="toggleGravity()">Toggle gravity (G)</button>
+            <button onclick="toggleEditor()">Editor (E)</button>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <script src="script.js" defer></script>
+    <title>Animation v1.0.7</title>
+</head>
+<body class="dotted-bg">
+    <img style="display: none;" src="../../src/img/dwayne.png" id="dwayne">
+    <img style="display: none;" src="../../src/img/dwayne small.png" id="dwaynesmall">
+    <canvas id="fsc"></canvas>
+    <div class="container">
+        <div class="title">Game</div>
+        <canvas id="canvas"></canvas>
+        <div class="panel">
+            <button onclick="reset()">Reset</button>
+            <button onclick="updateSetting('framerate', 60)">60 FPS</button>
+            <button onclick="updateSetting('framerate', 120)">120 FPS</button>
+            <button onclick="pause()">Pause</button>
+        </div>
+    </div>
+</body>
+</html>

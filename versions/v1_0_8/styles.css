@@ -1,0 +1,102 @@
+@font-face {
+    font-family: 'bungee';
+    src: url(../../src/fonts/Bungee/Bungee-Regular.ttf);
+}
+
+@keyframes rainbow-background {
+    0% {background-color: red;}
+    50% {background-color: lime;}
+    100% {background-color: blue;}
+}
+
+:root {
+    --theme-primary: #1f1f1f;
+    --theme-secondary: #ff3e3e;
+    --font-color: rgb(255, 255, 255);
+}
+
+body {
+    background: var(--theme-primary);
+}
+
+.r {
+    animation: 50ms rainbow-background linear infinite alternate;
+}
+
+.dotted-bg {
+    background-image: radial-gradient(black 1px, transparent 1px);
+    background-size: 5px 5px;
+    background-repeat: repeat;
+    background-position: 50% 50%;
+}
+
+#fsc {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    z-index: 1;
+}
+
+.container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: fit-content;
+    height: fit-content;
+    background: var(--theme-primary);
+    border: 1px solid black;
+    box-shadow: 5px 5px 0px 0px #0003;
+    padding: 1rem;
+    z-index: 2;
+}
+
+.container .title {
+    width: 100%;
+    height: 3rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--font-color);
+    font-size: 1.25rem;
+    font-family: 'bungee';
+}
+
+.container #canvas {
+    position: relative;
+    background: #fafafa;
+    border: 1px solid black;
+    box-shadow: 3px 3px 0px 0px #0003;
+}
+
+.container .panel {
+    position: relative;
+    top: 1rem;
+    width: 100%;
+    height: 4rem;
+    margin-bottom: 1rem;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+}
+
+.panel button {
+    position: relative;
+    background: var(--theme-secondary);
+    color: white;
+    font-family: 'bungee';
+    border: 1px solid black;
+    outline: none;
+    box-shadow: 5px 5px 0px 0px #0003;
+    cursor: pointer;
+    transition: 70ms;
+
+    &:hover {
+        top: 3px;
+        left: 3px;
+        box-shadow: 2px 2px 0px 0px #0003;
+    }
+}

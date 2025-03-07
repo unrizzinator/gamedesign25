@@ -1,0 +1,6 @@
+- Theme updated again
+- Title updated
+- Game canvas replaced with (nonfunctional) pong
+- Button panel updated
+
+Working game coming soon
