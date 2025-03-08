@@ -3,6 +3,11 @@
     src: url(../../src/fonts/Bungee/Bungee-Regular.ttf);
 }
 
+@font-face {
+    font-family: 'code';
+    src: url(../../src/fonts/Fira_Code/FiraCode-VariableFont_wght.ttf);
+}
+
 @keyframes rainbow-background {
     0% {background-color: red;}
     50% {background-color: lime;}
@@ -71,36 +76,53 @@ body {
 .game-container #gameEditor {
     position: absolute;
     top: 50%;
-    left: calc(100% - 2rem);
+    left: calc(100% - 1rem);
     transform: translate(-100%, -50%);
-    width: 4rem;
-    height: auto;
-    aspect-ratio: 1/4;
+    width: 10rem;
+    height: calc(100% - 4rem);
     padding: .5rem;
     display: none;
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: auto;
     gap: .5rem;
-    flex-direction: column;
-    background: #000b;
-    border: 1px solid #fff4;
-    border-radius: 8px;
+    overflow: hidden;
+    background: #000d;
     backdrop-filter: blur(10px);
+    border-radius: 8px;
     z-index: 2;
+}
+
+#gameEditor * {
+    font-family: 'code';
+    color: white;
+}
+
+#gameEditor input {
+    width: 100%;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    outline: none;
+    border: none;
+    text-align: center;
+    background: #101010;
+    color: white;
 }
 
 #gameEditor button {
     width: 100%;
     height: auto;
-    aspect-ratio: 1/1;
-    background: #202020;
+    background: #101010;
     border-radius: 5px;
     margin: 0;
     padding: 0;
     outline: none;
     border: none;
-    transition: 60ms ease-out background;
+    cursor: pointer;
+    transition: filter 60ms ease-out;
 
     &:hover {
-        background: #101010;
+        filter: brightness(50%);
     }
 }
 
