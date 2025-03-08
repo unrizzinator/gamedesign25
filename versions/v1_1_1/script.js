@@ -1,6 +1,5 @@
 const titleElement = document.querySelector('.title');
 const canvas = document.querySelector('canvas');
-const editor = document.querySelector('#gameEditor');
 const ctx = canvas.getContext('2d');
 const GRAVITY_STRENGTH = 1.98;
 const GRAVITY_SPEED_MULTIPLIER = 0.1;
@@ -10,7 +9,6 @@ const CONSOLE_CLEAR_THRESHOLD = 200;
 const DASH_STAMINA_COST = 100;
 const STAMINA_RELOAD_SPEED = 0.25;
 const AIR_STRAFING_SPEED_MULTIPLIER = 0.7;
-const EDITOR_GRID_SIZE = 20;
 const BASE_TIMELINE_FRAMERATE = 60;
 
 var settings = {
@@ -24,26 +22,111 @@ var settings = {
         reset:   "r",
         pause:   "p",
         gravity: "g",
-        editor:  "e"
+        editor:  "e",
+        debug: "\\"
     },
     gravity: true,
-    editing: false
+    debug: false
 };
 
+var editor = {
+    panel: document.querySelector('#gameEditor'),
+    editing: false,
+    modes: ["select", "draw"],
+    mode: 0,
+    activeObject: null,
+    gridSize: 20,
+    setMode(i) {
+        this.mode = i;
+        this.panel.querySelector('[editor-mode]').textContent = `Mode (${this.modes[this.mode]})`;
+    },
+    apply() {
+        this.activeObject.position.x = Number.parseInt(this.panel.querySelector('#objectPosX ').value);
+        this.activeObject.position.y = Number.parseInt(this.panel.querySelector('#objectPosY ').value);
+        this.activeObject.size.x     = Number.parseInt(this.panel.querySelector('#objectSizeX').value);
+        this.activeObject.size.y     = Number.parseInt(this.panel.querySelector('#objectSizeY').value);
+    },
+    shift(d) {
+        switch (d) {
+            case 0:
+                this.activeObject.position.x -= 20;
+                break;
+            case 1:
+                this.activeObject.position.x += 20;
+                break;
+            case 2:
+                this.activeObject.position.y -= 20;
+                break;
+            case 3:
+                this.activeObject.position.y += 20;
+                break;
+            default:
+                break;
+        }
+        this.getObjectInfo();
+    },
+    setActiveObject(o) {
+        if (!o) return;
+        this.activeObject = o;
+        this.getObjectInfo();
+    },
+    clearActiveObject() {
+        this.activeObject = null;
+        this.panel.querySelector('#objectId   ').value = null;
+        this.panel.querySelector('#objectPosX ').value = null;
+        this.panel.querySelector('#objectPosY ').value = null;
+        this.panel.querySelector('#objectSizeX').value = null;
+        this.panel.querySelector('#objectSizeY').value = null;
+    },
+    getObjectInfo() {
+        if (!this.activeObject) return;
+        this.panel.querySelector('#objectId   ').value = this.activeObject.id;
+        this.panel.querySelector('#objectPosX ').value = this.activeObject.position.x;
+        this.panel.querySelector('#objectPosY ').value = this.activeObject.position.y;
+        this.panel.querySelector('#objectSizeX').value = this.activeObject.size.x;
+        this.panel.querySelector('#objectSizeY').value = this.activeObject.size.y;
+    },
+    changeMode() {
+        this.mode++;
+        if (this.mode > this.modes.length - 1) this.mode = 0;
+        this.clearActiveObject();
+        this.panel.querySelector('[editor-mode]').textContent = `Mode (${this.modes[this.mode]})`;
+    },
+    startDraw() {
+        if (this.mode != 1) return;
+    },
+    destroy() {
+        if (!this.activeObject) return;
+        this.activeObject.destroy();
+        this.clearActiveObject();
+    },
+    load() {
+        this.panel.style.display = "grid";
+        this.setMode(0);
+    },
+    unload() {
+        this.panel.style.display = "none";
+    }
+}
+
 var backgroundColor = "#101010";
-var timeScale = 1;
 var paused = false;
-var currMouseX = 0;
-var currMouseY = 0;
 var player = null;
-var canJump = true;
 var keyStates = {};
 var score = 0;
-
-var deltaTime, frametimeScale;
+var nextID = 0;
 
 canvas.width = GAME_WIDTH;
 canvas.height = GAME_HEIGHT;
+
+var objects = [];
+
+function getObjectById(n) {
+    for (let o of objects) {
+        if (o.id == n) return o;
+    }
+    return null;
+}
 
 class Vector {
     constructor(x, y) {
@@ -52,23 +135,19 @@ class Vector {
     }
 
     add(x, y) {
-        this.x += x;
-        this.y += y;
+        return new Vector(this.x + x, this.y + y);
     }
 
     addVector(other) {
-        this.x += other.x;
-        this.y += other.y;
+        return new Vector(this.x + other.x, this.y + other.y);
     }
 
     sub(x, y) {
-        this.x -= other.x;
-        this.y -= other.y;
+        return new Vector(this.x - x, this.y - y);
     }
 
     subVector(other) {
-        this.x -= other.x;
-        this.y -= other.y;
+        return new Vector(this.x -other.x, this.y - other.y);
     }
 
     set(x, y) {
@@ -77,31 +156,64 @@ class Vector {
     }
 
     abs() {
-        this.x = Math.abs(this.x);
-        this.y = Math.abs(this.y);
+        new Vector(Math.abs(this.x), Math.abs(this.y));
+    }
+
+    magnitude() {
+        return Math.sqrt(this.x * this.x + this.y * this.y);
+    }
+
+    unit() {
+        return new Vector(this.x/this.magnitude(), this.y/this.magnitude());
+    }
+
+    normal() {
+        return new Vector(-this.y, this.x).unit();
+    }
+
+    dot(other) {
+        return this.x * other.x + this.y * other.y;
     }
 
     clamp(minX, maxX, minY, maxY) {
-        this.x = Math.max(minX, Math.min(this.x, maxX));
-        this.y = Math.max(minY, Math.min(this.y, maxY));
+        return new Vector(Math.max(minX, Math.min(this.x, maxX)), Math.max(minY, Math.min(this.y, maxY)));
     }
 
     clampX(minX, maxX) {
-        this.x = Math.max(minX, Math.min(this.x, maxX));
+        return new Vector(Math.max(minX, Math.min(this.x, maxX)), this.y);
     }
 
     clampY(minY, maxY) {
-        this.y = Math.max(minY, Math.min(this.y, maxY));
+        return new Vector(this.x, Math.max(minY, Math.min(this.y, maxY)));
     }
 
     mul(scalarX, scalarY) {
-        this.x *= scalarX;
-        this.y *= scalarY;
+        return new Vector(this.x * scalarX, this.y * scalarY);
+    }
+
+    display(p, c, s) {
+        ctx.strokeStyle = c;
+        ctx.beginPath();
+        ctx.moveTo(p.x + cameraOffset.x, p.y + cameraOffset.y);
+        ctx.lineTo(p.x + cameraOffset.x + this.x * s, p.y + cameraOffset.y + this.y * s);
+        ctx.stroke();
+    }
+
+    displayUnit(p, c, l) {
+        let ue = this.unit().mul(l, l);
+        let origin = p.addVector(cameraOffset);
+        ctx.strokeStyle = c;
+        ctx.beginPath();
+        ctx.moveTo(origin.x, origin.y);
+        ctx.lineTo(origin.x + ue.x, origin.y + ue.y);
+        ctx.stroke();
     }
 }
 
 class Player {
     constructor(position, color) {
+        this.id = nextID;
+        this.type = "Player";
         this.position = position ? position : new Vector(canvas.width / 2, canvas.height / 2);
         this.velocity = new Vector();
         this.stamina = {
@@ -117,13 +229,14 @@ class Player {
         this.color = color ? color : "#f00";
         this.size = new Vector(20, 20);
         this.offset = new Vector(5, 20);
+        nextID++;
     }
 
     jump() {
         if (!this.isGrounded) return;
         this.isGrounded = false;
-        this.velocity.y > 0 ? this.velocity.set(this.velocity.x, -this.jumpHeight ) : 
-                              this.velocity.add(0, -this.jumpHeight );
+        this.velocity.y > 0 ? this.velocity.set(this.velocity.x, -this.jumpHeight) : 
+                              this.velocity = this.velocity.add(0, -this.jumpHeight);
     }
 
     dash() {
@@ -141,14 +254,23 @@ class Point {
     static instances = [];
 
     constructor(position, value) {
+        this.id = nextID;
+        this.type = "Point";
         if (!position || !value) throw console.error("Missing an argument or two.");
         this.position = position;
         this.value = value ? value : 1;
         Point.instances.push(this);
+        objects.push(this);
+        nextID++;
     }
 
     static clearInstances() {
         Point.instances = [];
+    }
+
+    destroy() {
+        Point.instances.splice(Point.instances.indexOf(this), 1);
+        objects.splice(objects.indexOf(this), 1);
     }
 }
 
@@ -157,15 +279,25 @@ class Dialog {
     static instances = [];
 
     constructor(text, color, position) {
+        this.id = nextID;
+        this.type = "Dialog";
         if (!text) return console.error("No text provided.");
         this.text = text;
         this.color = color ? color : "#fff";
+        this.size = new Vector(ctx.measureText(this.text).width, ctx.measureText(this.text).fontBoundingBoxAscent + ctx.measureText(this.text).fontBoundingBoxDescent);
         this.position = position ? position : new Vector(canvas.width / 2, canvas.height / 2);
         Dialog.instances.push(this);
+        objects.push(this);
+        nextID++;
     }
 
     static clearInstances() {
         Dialog.instances = [];
+    }
+
+    destroy() {
+        Dialog.instances.splice(Dialog.instances.indexOf(this), 1);
+        objects.splice(objects.indexOf(this), 1);
     }
 }
 
@@ -174,15 +306,24 @@ class Platform {
     static instances = [];
 
     constructor(position, size, color) {
+        this.id = nextID;
+        this.type = "Platform";
         this.position = position ? position : new Vector();
         this.velocity = new Vector();
         this.size = size;
         this.color = color ? color : "#444";
         Platform.instances.push(this);
+        objects.push(this);
+        nextID++;
     }
 
     static clearInstances() {
         Platform.instances = [];
+    }
+
+    destroy() {
+        Platform.instances.splice(Platform.instances.indexOf(this), 1);
+        objects.splice(objects.indexOf(this), 1);
     }
 }
 
@@ -191,16 +332,25 @@ class Bouncepad {
     static instances = [];
 
     constructor(position, power, size, color) {
+        this.id = nextID;
+        this.type = "Bouncepad";
         this.position = position ? position : new Vector();
         this.velocity = new Vector();
         this.power = power ? Math.max(0, power) : 10;
         this.size = size;
         this.color = color ? color : "#444";
         Platform.instances.push(this);
+        objects.push(this);
+        nextID++;
     }
 
     static clearInstances() {
         Bouncepad.instances = [];
+    }
+
+    destroy() {
+        Bouncepad.instances.splice(Bouncepad.instances.indexOf(this), 1);
+        objects.splice(objects.indexOf(this), 1);
     }
 }
 
@@ -217,17 +367,31 @@ function toggleGravity() {
 }
 
 function toggleEditor() {
-    settings.editing = !settings.editing;
-    if (settings.editing) loadEditor();
-    else unloadEditor();
+    editor.editing = !editor.editing;
+    if (editor.editing) editor.load();
+    else editor.unload();
 }
 
-function loadEditor() {
-    editor.style.display = "flex";
+function toggleDebug() {
+    settings.debug = !settings.debug;
 }
 
-function unloadEditor() {
-    editor.style.display = "none";
+var cameraOffset = new Vector();
+var currMousePos = new Vector();
+
+function getObjectAtMouse() {
+    var pc = new Vector(currMousePos.x, currMousePos.y);
+        pc = pc.subVector(cameraOffset);
+        pc = pc.add(canvas.width/2, canvas.height/2);
+    for (let o of objects) {
+        if (o.type == "Platform" || o.type == "Bouncepad") {
+            if (pc.x > o.position.x && pc.x < o.position.x + o.size.x &&
+                pc.y > o.position.y && pc.y < o.position.y + o.size.y) {
+                    return o;
+            }
+        }
+    }
+    return null;
 }
 
 function reset() {
@@ -243,9 +407,9 @@ function pause() {
 }
 
 function setup() {
-    player = new Player(new Vector(240, 100), "#09f");
+    player = new Player(new Vector(240, 100), "#08f");
     
-    new Platform(new Vector(-canvas.width * 5, canvas.height), new Vector(canvas.width * 7, canvas.height), "#222");
+    new Platform(new Vector(-canvas.width * 5, canvas.height), new Vector(canvas.width * 7, canvas.height), "#202020");
     new Platform(new Vector(-100, 0), new Vector(100, 460), "#fff");
     new Platform(new Vector(-100, 480), new Vector(100, (canvas.height * 2) - 480), "#fff");
     new Platform(new Vector(canvas.width * 2, 0), new Vector(100, canvas.height * 2), "#fff");
@@ -271,17 +435,20 @@ function setup() {
 
     new Bouncepad(new Vector(0, 320), 12, new Vector(20, 20), "#69ff69");
     new Bouncepad(new Vector(1220, 580), 20, new Vector(60, 20), "#69ff69");
-    new Bouncepad(new Vector(1280, 580), 50000, new Vector(60, 20), "#f80");
+    new Bouncepad(new Vector(1280, 580), 50000, new Vector(60, 20), "#ff8800");
 
-    new Dialog("• Collision system fixed", "#8888", new Vector(30, 20));
-    new Dialog("• Smooth cam", "#8888", new Vector(30, 50));
-    new Dialog("• Player squish physics", "#8888", new Vector(30, 80));
-    new Dialog("• Bigger map", "#8888", new Vector(30, 110));
-    new Dialog("• Updated Vector, Player, Rectangle class", "#8888", new Vector(30, 140));
-    new Dialog("• Added keybinds", "#8888", new Vector(30, 170));
-    new Dialog("• FPS counter", "#8888", new Vector(30, 200));
-    new Dialog("• Added Dialog class", "#8888", new Vector(30, 230));
-    new Dialog("• More", "#8888", new Vector(30, 260));
+    new Dialog("• Collision system fixed", "#88888888", new Vector(50, 20));
+    new Dialog("• Smooth cam", "#88888888", new Vector(50, 50));
+    new Dialog("• Player squish physics", "#88888888", new Vector(50, 80));
+    new Dialog("• Bigger map", "#88888888", new Vector(50, 110));
+    new Dialog("• Updated Vector, Player, Rectangle class", "#88888888", new Vector(50, 140));
+    new Dialog("• Added keybinds", "#88888888", new Vector(50, 170));
+    new Dialog("• FPS counter", "#88888888", new Vector(50, 200));
+    new Dialog("• Added Dialog class", "#88888888", new Vector(50, 230));
+    new Dialog("• More", "#88888888", new Vector(50, 260));
+
+    editor.editing = false;
+    editor.unload();
 }
 
 function toRad(deg) {
@@ -293,14 +460,14 @@ function clamp(value, min, max) {
 }
 
 function drawGraph() {
-    ctx.fillStyle = "#444";
-    for (let _x = 0; _x < Math.floor(canvas.width + 50 / EDITOR_GRID_SIZE); _x++) {
-        let offset = cameraOffset.x % EDITOR_GRID_SIZE;
-        ctx.fillRect((_x * EDITOR_GRID_SIZE) + offset, 0, 1, canvas.height);
+    ctx.fillStyle = "#404040";
+    for (let _x = 0; _x < Math.floor(canvas.width + 50 / editor.gridSize); _x++) {
+        let offset = cameraOffset.x % editor.gridSize;
+        ctx.fillRect((_x * editor.gridSize) + offset, 0, 1, canvas.height);
     }
-    for (let _y = 0; _y < Math.floor(canvas.height / EDITOR_GRID_SIZE); _y++) {
-        let offset = cameraOffset.y % EDITOR_GRID_SIZE;
-        ctx.fillRect(0, (_y * EDITOR_GRID_SIZE) + offset, canvas.width, 1);
+    for (let _y = 0; _y < Math.floor(canvas.height / editor.gridSize); _y++) {
+        let offset = cameraOffset.y % editor.gridSize;
+        ctx.fillRect(0, (_y * editor.gridSize) + offset, canvas.width, 1);
     }
 }
 
@@ -352,29 +519,26 @@ function checkCollision(player, rect) {
     return false;
 }
 
-var cameraOffset = new Vector();
-
-function updatePhysics() {
+function updatePhysics(deltaTime) {
     if (player.position.y + player.velocity.y > 2000) reset();
-    if (settings.gravity) player.velocity.add(0, GRAVITY_STRENGTH * GRAVITY_SPEED_MULTIPLIER);
-    if (keyStates[settings.controls.left]) player.velocity.add(-player.acceleration * (player.isGrounded?1:AIR_STRAFING_SPEED_MULTIPLIER), 0);
-    if (keyStates[settings.controls.right]) player.velocity.add(player.acceleration * (player.isGrounded?1:AIR_STRAFING_SPEED_MULTIPLIER), 0);
-    player.velocity.clamp((player.isDashing ? -50 : -10), (player.isDashing ? 50 : 10), -30, 20);
-    player.velocity.mul(1 - player.friction, 1);
-    player.position.add(player.velocity.x, player.velocity.y);
+    if (settings.gravity) player.velocity = player.velocity.add(0, GRAVITY_STRENGTH * GRAVITY_SPEED_MULTIPLIER * deltaTime);
+    if (keyStates[settings.controls.left]) player.velocity = player.velocity.add(-player.acceleration * (player.isGrounded?1:AIR_STRAFING_SPEED_MULTIPLIER) * deltaTime, 0);
+    if (keyStates[settings.controls.right]) player.velocity = player.velocity.add(player.acceleration * (player.isGrounded?1:AIR_STRAFING_SPEED_MULTIPLIER) * deltaTime, 0);
+    if (Math.abs(player.velocity.x) < 0.1) player.velocity.x = 0;
+    player.velocity = player.velocity.clamp((player.isDashing ? -50 : -10), (player.isDashing ? 50 : 10), -15, 10);
+    player.velocity = player.velocity.mul(1 - player.friction * deltaTime, 1);
+    player.position = player.position.add(player.velocity.x * deltaTime, player.velocity.y * deltaTime);
 
     Platform.instances.forEach(p => {
         checkCollision(player, p);
     });
 }
 
-var currCursorPos = new Vector();
-
 function draw() {
     ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    if (settings.editing) drawGraph();
+    if (editor.editing) drawGraph();
 
     Platform.instances.forEach(p => {
         ctx.fillStyle = p.color;
@@ -396,41 +560,62 @@ function draw() {
                  player.size.x + Math.max(-8, -playerSizeSquashX), 
                  player.size.y + Math.max(-8, -playerSizeSquashY));
 
-    let offsetX = cameraOffset.x % EDITOR_GRID_SIZE;
-    let offsetY = cameraOffset.y % EDITOR_GRID_SIZE;
+    let offsetX = cameraOffset.x % editor.gridSize;
+    let offsetY = cameraOffset.y % editor.gridSize;
+
+    ctx.fillStyle = "#08f";
+    ctx.fillRect(0, canvas.height - 5, (player.stamina.value/player.stamina.max)*canvas.width, 5);
+
+    if (settings.debug) {
+        ctx.fillStyle = "#0008";
+        ctx.fillRect(40, 40, 200, 80);
+        ctx.fillStyle = "white";
+        ctx.fillText(`Vel x: ${player.velocity.x.toPrecision(4)}`, 50, 68);
+        ctx.fillText(`Vel y: ${player.velocity.y.toPrecision(4)}`, 50, 104);
+
+        let centerOfPlayer = player.position.addVector(player.size.mul(0.5, 0.5));
+        ctx.lineWidth = 3;
+        new Vector(0, -1).normal().displayUnit(centerOfPlayer, "#f00", 120);
+        player.velocity.normal().displayUnit(centerOfPlayer, "#08f", 50);
+        player.velocity.displayUnit(centerOfPlayer, "#6f6", 100);
+        player.velocity.display(centerOfPlayer, "#f60", 10);
+    }
     
-    ctx.fillStyle = "#000b";
-    ctx.fillRect(40, 40, 300, 80);
-    ctx.fillStyle = "white";
-    ctx.fillText(`Current Delta Time: ${deltaTime.toPrecision(4)}`, 50, 68);
-    ctx.fillText(`Time Scale: ${(deltaTime/(1000/60)).toPrecision(3)}`, 50, 105);
+    if (!editor.editing) return;
 
-    if (!settings.editing) return;
+    let target = getObjectAtMouse();
 
-    ctx.strokeStyle = "orange";
-    // ctx.strokeRect(Math.floor((currMouseX + canvas.width/2 - EDITOR_GRID_SIZE/2) / EDITOR_GRID_SIZE) * EDITOR_GRID_SIZE + offsetX /* + offsetX */, 
-    //                Math.floor((currMouseY + canvas.height/2) / EDITOR_GRID_SIZE) * EDITOR_GRID_SIZE + EDITOR_GRID_SIZE/2 /* + offsetY */,
-    //                EDITOR_GRID_SIZE,
-    //                EDITOR_GRID_SIZE);
+    if (target && editor.mode == 0) {
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = "#80f";
+        ctx.strokeRect(target.position.x + cameraOffset.x, target.position.y + cameraOffset.y, target.size.x, target.size.y);
+    }
+
+    if (editor.activeObject) {
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = "#f80";
+        ctx.strokeRect(editor.activeObject.position.x + cameraOffset.x, editor.activeObject.position.y + cameraOffset.y, editor.activeObject.size.x, editor.activeObject.size.y);
+    }
+
+    // ctx.lineWidth = 2;
+    // ctx.strokeStyle = "orange";
+    // ctx.strokeRect(Math.floor((currMousePos.x - offsetX + canvas.width/2) / editor.gridSize) * editor.gridSize + offsetX, 
+    //                Math.floor((currMousePos.y - offsetY + canvas.height/2) / editor.gridSize) * editor.gridSize + offsetY,
+    //                editor.gridSize,
+    //                editor.gridSize);
+
+    ctx.fillStyle = "#fff";
 }
 
 var lastDeltaTime = performance.now();
-var frameStep = 0;
 
 function loop(t) {
-    // frameStep++;
-    if (frameStep >= CONSOLE_CLEAR_THRESHOLD) {
-        console.clear();
-        frameStep = 0;
-    }
-
-    deltaTime = ((t - lastDeltaTime)/1000);
+    deltaTime = (t - lastDeltaTime)/1000;
+    deltaTime = Math.min(deltaTime, 0.016) * 120;
     lastDeltaTime = t;
 
-    console.log(`t: ${deltaTime}`);
-
     if (!paused && deltaTime) {
-        player.stamina.value += STAMINA_RELOAD_SPEED * frametimeScale;
+        player.stamina.value += STAMINA_RELOAD_SPEED;
         player.stamina.value = clamp(player.stamina.value, player.stamina.min, player.stamina.max);
         var targetCameraOffset = new Vector(
             -(player.position.x + player.size.x / 2) + canvas.width / 2,
@@ -438,10 +623,10 @@ function loop(t) {
         cameraOffset.x += (targetCameraOffset.x - cameraOffset.x) * 0.1;
         cameraOffset.y += (targetCameraOffset.y - cameraOffset.y) * 0.1;
 
-        updatePhysics();
+        updatePhysics(deltaTime);
         draw();
 
-        titleElement.innerHTML = `Score: ${score} | Framerate: ${Math.floor(1000/deltaTime)}`;
+        titleElement.innerHTML = `Score: ${score}`;
     }
     requestAnimationFrame(loop);
 }
@@ -451,12 +636,30 @@ loop();
 
 canvas.onmousemove = (ev) => {
     const bb = canvas.getBoundingClientRect();
-    currMouseX = ev.clientX - bb.left - canvas.width/2;
-    currMouseY = ev.clientY - bb.top - canvas.height/2;
+    currMousePos.x = ev.clientX - bb.left - canvas.width/2;
+    currMousePos.y = ev.clientY - bb.top - canvas.height/2;
+}
+
+canvas.onmousedown = (ev) => {
+    if (ev.target != canvas) return;
+    if (editor.editing) {
+        switch (editor.mode) {
+            case 0:
+                let objectAtMousePosition = getObjectAtMouse(currMousePos);
+                if (objectAtMousePosition) editor.setActiveObject(objectAtMousePosition);
+                else editor.clearActiveObject();
+                break;
+            case 1:
+                
+                break;
+            default:
+                break;
+        }
+    }
 }
 
 document.onkeydown = (ev) => {
-    ev.preventDefault();
+    if (ev.key == "Tab" || ev.key == " " || ev.key == "Enter") ev.preventDefault();
     keyStates[ev.key.toLowerCase()] = true;
     switch (ev.key.toLowerCase()) {
         case settings.controls.jump:
@@ -479,6 +682,9 @@ document.onkeydown = (ev) => {
             break;
         case settings.controls.editor:
             toggleEditor();
+            break;
+        case settings.controls.debug:
+            toggleDebug();
             break;
         default:
             null;
