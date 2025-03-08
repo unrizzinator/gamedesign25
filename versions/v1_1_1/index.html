@@ -13,10 +13,19 @@
         <div class="game-container">
             <canvas></canvas>
             <div id="gameEditor">
-                <button></button>
-                <button></button>
-                <button></button>
-                <button></button>
+                <input type="text" id="objectId" placeholder="id" style="grid-column: 1/3;" readonly>
+                <input type="text" id="objectPosX" placeholder="x">
+                <input type="text" id="objectPosY" placeholder="y">
+                <input type="text" id="objectSizeX" placeholder="w">
+                <input type="text" id="objectSizeY" placeholder="h">
+                <button style="grid-row: 4; grid-column: 1/2;" onclick="editor.shift(0)">&leftarrow;</button>
+                <button style="grid-row: 4; grid-column: 2/3;" onclick="editor.shift(1)">&rightarrow;</button>
+                <button style="grid-row: 5; grid-column: 0/1;" onclick="editor.shift(2)">&uparrow;</button>
+                <button style="grid-row: 5; grid-column: 2/3;" onclick="editor.shift(3)">&downarrow;</button>
+                <button style="grid-row: 7; grid-column: 1/3;" onclick="editor.apply()">Apply</button>
+                <button style="grid-row: 8; grid-column: 1/3;" onclick="editor.destroy()">Destroy</button>
+                <button style="grid-row: 9; grid-column: 1/3;" editor-mode onclick="editor.changeMode()">Mode: select</button>
+                <button style="grid-row: 10; grid-column: 1/3;" onclick="toggleDebug()">Debug (\)</button>
             </div>
         </div>
         <div class="panel">
