@@ -9,8 +9,9 @@ const GAME_HEIGHT = 600;
 const CONSOLE_CLEAR_THRESHOLD = 200;
 const DASH_STAMINA_COST = 100;
 const STAMINA_RELOAD_SPEED = 0.25;
-const AIR_STRAFING_SPEED_MULTIPLIER = 0.75;
+const AIR_STRAFING_SPEED_MULTIPLIER = 0.7;
 const EDITOR_GRID_SIZE = 20;
+const BASE_TIMELINE_FRAMERATE = 60;
 
 var settings = {
     controls: {
@@ -38,6 +39,8 @@ var player = null;
 var canJump = true;
 var keyStates = {};
 var score = 0;
+
+var deltaTime, frametimeScale;
 
 canvas.width = GAME_WIDTH;
 canvas.height = GAME_HEIGHT;
@@ -119,8 +122,8 @@ class Player {
     jump() {
         if (!this.isGrounded) return;
         this.isGrounded = false;
-        this.velocity.y > 0 ? this.velocity.set(this.velocity.x, -this.jumpHeight) : 
-                              this.velocity.add(0, -this.jumpHeight);
+        this.velocity.y > 0 ? this.velocity.set(this.velocity.x, -this.jumpHeight ) : 
+                              this.velocity.add(0, -this.jumpHeight );
     }
 
     dash() {
@@ -141,7 +144,7 @@ class Point {
         if (!position || !value) throw console.error("Missing an argument or two.");
         this.position = position;
         this.value = value ? value : 1;
-        points.push(this);
+        Point.instances.push(this);
     }
 
     static clearInstances() {
@@ -242,8 +245,9 @@ function pause() {
 function setup() {
     player = new Player(new Vector(240, 100), "#09f");
     
-    new Platform(new Vector(0, canvas.height), new Vector(canvas.width * 2, canvas.height), "#222");
-    new Platform(new Vector(-100, 0), new Vector(100, canvas.height * 2), "#fff");
+    new Platform(new Vector(-canvas.width * 5, canvas.height), new Vector(canvas.width * 7, canvas.height), "#222");
+    new Platform(new Vector(-100, 0), new Vector(100, 460), "#fff");
+    new Platform(new Vector(-100, 480), new Vector(100, (canvas.height * 2) - 480), "#fff");
     new Platform(new Vector(canvas.width * 2, 0), new Vector(100, canvas.height * 2), "#fff");
 
     new Platform(new Vector(600, 0), new Vector(400, 460), "#303030");
@@ -278,10 +282,6 @@ function setup() {
     new Dialog("• FPS counter", "#8888", new Vector(30, 200));
     new Dialog("• Added Dialog class", "#8888", new Vector(30, 230));
     new Dialog("• More", "#8888", new Vector(30, 260));
-
-    // for (let i = 0; i < 10; i++) {
-    //     new Point(new Vector(Math.random() * canvas.width, Math.random() * canvas.height), 1);
-    // }
 }
 
 function toRad(deg) {
@@ -304,8 +304,6 @@ function drawGraph() {
     }
 }
 
-// Function below only checks collisions between the player and the environment at the moment.
-// Note: Collision system upgraded by AI.
 function checkCollision(player, rect) {
     let nextPos = {
         x: player.position.x + player.velocity.x,
@@ -319,27 +317,22 @@ function checkCollision(player, rect) {
                      nextPos.y < rect.position.y + rect.size.y;
 
     if (collisionX && collisionY) {
-        // Calculate the overlap depth
-        let overlapRight = nextPos.x + player.size.x - rect.position.x; // Right side
-        let overlapLeft = rect.position.x + rect.size.x - nextPos.x;    // Left side
-        let overlapDown = nextPos.y + player.size.y - rect.position.y;  // Bottom side
-        let overlapUp = rect.position.y + rect.size.y - nextPos.y;      // Top side
+        let overlapRight = nextPos.x + player.size.x - rect.position.x;
+        let overlapLeft = rect.position.x + rect.size.x - nextPos.x;
+        let overlapDown = nextPos.y + player.size.y - rect.position.y;
+        let overlapUp = rect.position.y + rect.size.y - nextPos.y;
 
-        // Find the smallest overlap, but factor in movement direction
         let smallestOverlap = Math.min(overlapRight, overlapLeft, overlapDown, overlapUp);
 
         if (smallestOverlap === overlapRight && player.velocity.x > 0) {
-            // Colliding on the right
             player.position.x = rect.position.x - player.size.x;
             player.velocity.x = 0;
         } 
         else if (smallestOverlap === overlapLeft && player.velocity.x < 0) {
-            // Colliding on the left
             player.position.x = rect.position.x + rect.size.x;
             player.velocity.x = 0;
         } 
         else if (smallestOverlap === overlapDown && player.velocity.y > 0) {
-            // Landing on the floor
             player.position.y = rect.position.y - player.size.y;
             if (rect instanceof Platform) {
                 player.velocity.y = 0;
@@ -349,7 +342,6 @@ function checkCollision(player, rect) {
             player.isGrounded = true;
         } 
         else if (smallestOverlap === overlapUp && player.velocity.y < 0) {
-            // Hitting the ceiling
             player.position.y = rect.position.y + rect.size.y;
             player.velocity.y = 0;
         }
@@ -360,7 +352,6 @@ function checkCollision(player, rect) {
     return false;
 }
 
-
 var cameraOffset = new Vector();
 
 function updatePhysics() {
@@ -368,25 +359,13 @@ function updatePhysics() {
     if (settings.gravity) player.velocity.add(0, GRAVITY_STRENGTH * GRAVITY_SPEED_MULTIPLIER);
     if (keyStates[settings.controls.left]) player.velocity.add(-player.acceleration * (player.isGrounded?1:AIR_STRAFING_SPEED_MULTIPLIER), 0);
     if (keyStates[settings.controls.right]) player.velocity.add(player.acceleration * (player.isGrounded?1:AIR_STRAFING_SPEED_MULTIPLIER), 0);
-    player.velocity.clamp(player.isDashing ? -50 : -10, player.isDashing ? 50 : 10, -30, 20);
+    player.velocity.clamp((player.isDashing ? -50 : -10), (player.isDashing ? 50 : 10), -30, 20);
     player.velocity.mul(1 - player.friction, 1);
     player.position.add(player.velocity.x, player.velocity.y);
 
     Platform.instances.forEach(p => {
-        checkCollision(player, p)
+        checkCollision(player, p);
     });
-
-    // points.forEach(p => {
-    //     const playerPos = player.position;
-    //     const pointPos = p.position;
-    //     const magnitude = Math.sqrt(Math.pow(Math.abs(playerPos.x - pointPos.x), 2) + Math.pow(Math.abs(playerPos.y - pointPos.y), 2));
-        
-    //     if (magnitude < player.size.x - 10) {
-    //         // Player collected point
-    //         score += p.value;
-    //         points.splice(points.indexOf(p), 1);
-    //     }
-    // });
 }
 
 var currCursorPos = new Vector();
@@ -408,16 +387,8 @@ function draw() {
         ctx.fillText(d.text, d.position.x + cameraOffset.x, d.position.y + cameraOffset.y);
     });
 
-    // points.forEach(p => {
-    //     ctx.fillStyle = "#ff0";
-    //     ctx.beginPath();
-    //     ctx.ellipse(p.position.x + 5, p.position.y + 5, 10, 10, 0, 0, Math.PI * 2);
-    //     ctx.closePath();
-    //     ctx.fill();
-    // });
-
     let playerSizeSquashX = Math.max(0, player.velocity.y);
-    let playerSizeSquashY = player.velocity.x > 10 ? Math.abs(player.velocity.x) : 0;
+    let playerSizeSquashY = Math.abs(player.velocity.x) > 10 ? Math.abs(player.velocity.x) : 0;
 
     ctx.fillStyle = player.color;
     ctx.fillRect(player.position.x - (Math.max(-8, -playerSizeSquashX) / 2) + cameraOffset.x, 
@@ -427,10 +398,14 @@ function draw() {
 
     let offsetX = cameraOffset.x % EDITOR_GRID_SIZE;
     let offsetY = cameraOffset.y % EDITOR_GRID_SIZE;
+    
+    ctx.fillStyle = "#000b";
+    ctx.fillRect(40, 40, 300, 80);
+    ctx.fillStyle = "white";
+    ctx.fillText(`Current Delta Time: ${deltaTime.toPrecision(4)}`, 50, 68);
+    ctx.fillText(`Time Scale: ${(deltaTime/(1000/60)).toPrecision(3)}`, 50, 105);
 
     if (!settings.editing) return;
-
-    // console.log(currMouseX + "\n" + currMouseY);
 
     ctx.strokeStyle = "orange";
     // ctx.strokeRect(Math.floor((currMouseX + canvas.width/2 - EDITOR_GRID_SIZE/2) / EDITOR_GRID_SIZE) * EDITOR_GRID_SIZE + offsetX /* + offsetX */, 
@@ -439,23 +414,23 @@ function draw() {
     //                EDITOR_GRID_SIZE);
 }
 
-
 var lastDeltaTime = performance.now();
-var deltaTime;
 var frameStep = 0;
 
-function loop() {
+function loop(t) {
     // frameStep++;
     if (frameStep >= CONSOLE_CLEAR_THRESHOLD) {
         console.clear();
         frameStep = 0;
     }
-    let currentDeltaTime = performance.now();
-    deltaTime = (currentDeltaTime - lastDeltaTime);
-    lastDeltaTime = currentDeltaTime;
 
-    if (!paused) {
-        player.stamina.value += STAMINA_RELOAD_SPEED;
+    deltaTime = ((t - lastDeltaTime)/1000);
+    lastDeltaTime = t;
+
+    console.log(`t: ${deltaTime}`);
+
+    if (!paused && deltaTime) {
+        player.stamina.value += STAMINA_RELOAD_SPEED * frametimeScale;
         player.stamina.value = clamp(player.stamina.value, player.stamina.min, player.stamina.max);
         var targetCameraOffset = new Vector(
             -(player.position.x + player.size.x / 2) + canvas.width / 2,
