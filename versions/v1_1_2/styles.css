@@ -17,7 +17,7 @@
 :root {
     --theme-primary: #181818;
     --theme-secondary: #ff3e3e;
-    --font-color: rgb(0, 0, 0);
+    --font-color: rgb(0, 0, 0); 
 }
 
 body {

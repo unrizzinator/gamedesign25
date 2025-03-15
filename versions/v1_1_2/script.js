@@ -28,7 +28,7 @@ var settings = {
         delete:  "delete"
     },
     gravity: true,
-    debug: true
+    debug: false
 };
 
 var editor = {
@@ -38,7 +38,7 @@ var editor = {
     modes: ["select", "draw", "move"],
     mode: 0,
     activeObject: null,
-    gridSize: 20,
+    gridSize: 100,
     setMode(i) {
         this.mode = i;
         this.panel.querySelector('[editor-mode]').textContent = `Mode (${this.modes[this.mode]})`;
@@ -131,7 +131,7 @@ var editor = {
     }
 }
 
-var backgroundColor = "#101010";
+var backgroundColor = "#080808";
 var paused = false;
 var player = null;
 var keyStates = {};
@@ -273,11 +273,12 @@ function checkLineIntersection(startPos, endPos, obj) {
     }
 }
 
+let spawnpoint = new Vector(0, -120);
+
 class Player {
     constructor(position, color) {
         this.id = nextID;
         this.type = "Player";
-        this.spawn = new Vector(0, 0);
         this.position = position ? position : new Vector(canvas.width / 2, canvas.height / 2);
         this.velocity = new Vector();
         this.stamina = {
@@ -310,6 +311,11 @@ class Player {
         this.velocity.x *= 5;
         this.velocity.clampX(-25, 25);
         setTimeout(() => {this.isDashing = false}, 200);
+    }
+
+    setSpawnpoint(v) {
+        if (!v) return;
+        spawnpoint = v;
     }
 }
 
@@ -424,11 +430,11 @@ class Platform {
 
     static instances = [];
 
-    constructor(position, size, color) {
+    constructor(position, size, color, velocity) {
         this.id = nextID;
         this.type = "Platform";
         this.position = position ? position : new Vector();
-        this.velocity = new Vector();
+        this.velocity = velocity ? velocity : new Vector();
         this.size = size;
         this.color = color ? color : "#444";
         Platform.instances.push(this);
@@ -442,6 +448,31 @@ class Platform {
 
     destroy() {
         Platform.instances.splice(Platform.instances.indexOf(this), 1);
+        objects.splice(objects.indexOf(this), 1);
+    }
+}
+
+class Checkpoint {
+
+    static instances = [];
+
+    constructor(position, size) {
+        this.id = nextID;
+        this.type = "Checkpoint";
+        this.position = position ? position : new Vector();
+        this.size = size;
+        this.color = "#f09";
+        Checkpoint.instances.push(this);
+        objects.push(this);
+        nextID++;
+    }
+
+    static clearInstances() {
+        Checkpoint.instances = [];
+    }
+
+    destroy() {
+        Checkpoint.instances.splice(Checkpoint.instances.indexOf(this), 1);
         objects.splice(objects.indexOf(this), 1);
     }
 }
@@ -514,7 +545,8 @@ function getObjectAtMouse() {
 }
 
 function reset() {
-    player = new Player(new Vector(240, 100), "#f08");
+    const _tmpPlayerSize = new Vector().addVector(player.size);
+    player = new Player(spawnpoint.add(-(_tmpPlayerSize.x/2), -_tmpPlayerSize.y - 20), "#fff");
 }
 
 function pause() {
@@ -522,49 +554,33 @@ function pause() {
 }
 
 function setup() {
-    player = new Player(new Vector(240, 100), "#08f");
-
-    // new Zone("spawn", new Vector(0, 0), new Vector(600, 600), true);
-    new AITurret(new Vector(200, 900));
+    player = new Player(spawnpoint.add(-10, -40), "#fff");
     
-    new Platform(new Vector(-canvas.width * 5, canvas.height), new Vector(canvas.width * 7, canvas.height), "#202020");
-    new Platform(new Vector(-100, 0), new Vector(100, 460), "#fff");
-    new Platform(new Vector(-100, 480), new Vector(100, (canvas.height * 2) - 480), "#fff");
-    new Platform(new Vector(canvas.width * 2, 0), new Vector(100, canvas.height * 2), "#fff");
+    // Floor
+    new Platform(new Vector(-(Number.MAX_SAFE_INTEGER/2), 0), new Vector(Number.MAX_SAFE_INTEGER, canvas.height), "#0a0a0a");
 
-    new Platform(new Vector(600, 0), new Vector(200, 460), "#303030");
-    new Platform(new Vector(600, 480), new Vector(400, 120), "#fff");
-    new Platform(new Vector(1000, 500), new Vector(60, 20), "#fff");
-    new Platform(new Vector(1000, 560), new Vector(200, 20), "#fff");
-    new Platform(new Vector(1200, 560), new Vector(20, 40), "#fff");
+    // Walls
+    new Platform(new Vector(-2000 - 100, -Number.MAX_SAFE_INTEGER/4), new Vector(100, Number.MAX_SAFE_INTEGER/2), "#fff0");
+    new Platform(new Vector(2000, -Number.MAX_SAFE_INTEGER/4), new Vector(100, Number.MAX_SAFE_INTEGER/2), "#fff0");
 
-    new Platform(new Vector(20, 320), new Vector(280, 20), "#fff");
-    new Platform(new Vector(20, 0), new Vector(20, 280), "#fff");
-    new Platform(new Vector(20, 280), new Vector(100, 20), "#fff");
-    new Platform(new Vector(300, 220), new Vector(300, 20), "#fff");
-    new Platform(new Vector(500, 260), new Vector(20, 100), "#fff");
-    new Platform(new Vector(200, 320), new Vector(20, 200), "#fff");
+    // Falling platforms
+    for (let i = 1; i <= 5000; i++) {
+        new Platform(new Vector((Math.random() * 800) - 400, -100 - (i * 40) + ((Math.random() * 60) - 30)), new Vector(100, 10), "#fff", new Vector(0, -Math.random() * 0.1 + 0.5));
+    }
 
-    new Platform(new Vector(300, 380), new Vector(100, 20), "#fff");
-    new Platform(new Vector(400, 480), new Vector(180, 20), "#fff");
-    new Platform(new Vector(300, 580), new Vector(100, 20), "#fff");
-    new Platform(new Vector(500, 120), new Vector(100, 20), "#fff");
-    new Platform(new Vector(540, 0), new Vector(60, 20), "#fff");
+    new Checkpoint(new Vector(400, -600), new Vector(100, 10));
+    new Checkpoint(new Vector(-500, -1200), new Vector(100, 10));
 
-    new Bouncepad(new Vector(-40, -20), 12, new Vector(20, 20), "#ff8800");
-    new Bouncepad(new Vector(0, 320), 12, new Vector(20, 20), "#69ff69");
-    new Bouncepad(new Vector(1220, 580), 20, new Vector(60, 20), "#69ff69");
-    new Bouncepad(new Vector(1280, 580), 50000, new Vector(60, 20), "#ff8800");
-
-    new Dialog("• Collision system fixed", "#88888888", new Vector(50, 20));
-    new Dialog("• Smooth cam", "#88888888", new Vector(50, 50));
-    new Dialog("• Player squish physics", "#88888888", new Vector(50, 80));
-    new Dialog("• Bigger map", "#88888888", new Vector(50, 110));
-    new Dialog("• Updated Vector, Player, Rectangle class", "#88888888", new Vector(50, 140));
-    new Dialog("• Added keybinds", "#88888888", new Vector(50, 170));
-    new Dialog("• FPS counter", "#88888888", new Vector(50, 200));
-    new Dialog("• Added Dialog class", "#88888888", new Vector(50, 230));
-    new Dialog("• More", "#88888888", new Vector(50, 260));
+    let dialogYOffset = 50;
+    new Dialog("• Collision system fixed", "#88888888", new Vector(50, dialogYOffset + 20));
+    new Dialog("• Smooth cam", "#88888888", new Vector(50, dialogYOffset + 50));
+    new Dialog("• Player squish physics", "#88888888", new Vector(50, dialogYOffset + 80));
+    new Dialog("• Bigger map", "#88888888", new Vector(50, dialogYOffset + 110));
+    new Dialog("• Updated Vector, Player, Rectangle class", "#88888888", new Vector(50, dialogYOffset + 140));
+    new Dialog("• Added keybinds", "#88888888", new Vector(50, dialogYOffset + 170));
+    new Dialog("• FPS counter", "#88888888", new Vector(50, dialogYOffset + 200));
+    new Dialog("• Added Dialog class", "#88888888", new Vector(50, dialogYOffset + 230));
+    new Dialog("• More", "#88888888", new Vector(50, dialogYOffset + 260));
 
     editor.editing = false;
     editor.unload();
@@ -579,7 +595,7 @@ function clamp(value, min, max) {
 }
 
 function drawGraph() {
-    ctx.fillStyle = "#40404080";
+    ctx.fillStyle = "#40404040";
     for (let _x = 0; _x < Math.floor(canvas.width + 50 / editor.gridSize); _x++) {
         let offset = cameraOffset.x % editor.gridSize;
         ctx.fillRect((_x * editor.gridSize) + offset, 0, 1, canvas.height);
@@ -622,6 +638,9 @@ function checkCollision(player, rect) {
             player.position.y = rect.position.y - player.size.y;
             if (rect instanceof Platform) {
                 player.velocity.y = 0;
+            } else if (rect instanceof Checkpoint) {
+                player.velocity.y = 0;
+                player.setSpawnpoint(rect.position.add(rect.size.x/2, rect.position.y));
             } else if(rect instanceof Bouncepad) {
                 player.velocity.y = -rect.power;
             }
@@ -648,9 +667,14 @@ function updatePhysics(deltaTime) {
     player.velocity = player.velocity.mul(1 - player.friction * deltaTime, 1);
     player.position = player.position.add(player.velocity.x * deltaTime, player.velocity.y * deltaTime);
 
-    Platform.instances.forEach(p => {
+    for (let p of Platform.instances) {
+        p.position = p.position.addVector(p.velocity);
         checkCollision(player, p);
-    });
+    }
+
+    for (let c of Checkpoint.instances) {
+        checkCollision(player, c);
+    }
 
     for (let zone of Zone.zones) {
         let entities = zone.getEntities();
@@ -667,28 +691,33 @@ function draw() {
     ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = "#fff4";
-    ctx.font = "256px code";
-    ctx.fillText("00", canvas.width/3, canvas.height/1.5);
+    ctx.fillStyle = "#ffffff0a";
+    ctx.font = "200px code";
+    ctx.fillText(`${Math.round(score)}`, 50, 200);
 
     for (let zone of Zone.zones) {
         ctx.fillStyle = zone.color;
         ctx.fillRect(zone.position.x + cameraOffset.x, zone.position.y + cameraOffset.y, zone.size.x, zone.size.y);
     }
 
-    // if (editor.editing) 
+    // if (editor.editing)
     drawGraph();
 
-    Platform.instances.forEach(p => {
+    for (let c of Checkpoint.instances) {
+        ctx.fillStyle = c.color;
+        ctx.fillRect(c.position.x + cameraOffset.x, c.position.y + cameraOffset.y, c.size.x, c.size.y);
+    }
+
+    for (let p of Platform.instances) {
         ctx.fillStyle = p.color;
         ctx.fillRect(p.position.x + cameraOffset.x, p.position.y + cameraOffset.y, p.size.x, p.size.y);
-    });
+    }
 
-    Dialog.instances.forEach(d => {
+    for (let d of Dialog.instances) {
         ctx.fillStyle = d.color;
         ctx.font = "24px Arial";
         ctx.fillText(d.text, d.position.x + cameraOffset.x, d.position.y + cameraOffset.y);
-    });
+    }
 
     let playerSizeSquashX = Math.max(0, player.velocity.y);
     let playerSizeSquashY = Math.abs(player.velocity.x) > 10 ? Math.abs(player.velocity.x) : 0;
@@ -749,6 +778,8 @@ function loop(t) {
     deltaTime = (t - lastDeltaTime)/1000;
     deltaTime = Math.min(deltaTime, 0.016) * 120;
     lastDeltaTime = t;
+
+    score = Math.floor(Math.abs(player.position.y + 20) / 10);
 
     if (!paused && deltaTime) {
         if (!player) return;
