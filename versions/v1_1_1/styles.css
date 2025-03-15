@@ -15,15 +15,9 @@
 }
 
 :root {
-<<<<<<< HEAD
-    --theme-primary: #000;
-    --theme-secondary: #ff3e3e;
-    --font-color: rgb(255, 255, 255);
-=======
     --theme-primary: #efefef;
     --theme-secondary: #ff3e3e;
     --font-color: rgb(0, 0, 0);
->>>>>>> 8fa2ada (Test commit)
 }
 
 body {
@@ -35,11 +29,7 @@ body {
 }
 
 .dotted-bg {
-<<<<<<< HEAD
-    background-image: radial-gradient(black 1px, transparent 1px);
-=======
     background-image: radial-gradient(#0004 1px, transparent 1px);
->>>>>>> 8fa2ada (Test commit)
     background-size: 5px 5px;
     background-repeat: repeat;
     background-position: 50% 50%;
@@ -163,8 +153,4 @@ body {
         left: 3px;
         box-shadow: 2px 2px 0px 0px #0003;
     }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 8fa2ada (Test commit)

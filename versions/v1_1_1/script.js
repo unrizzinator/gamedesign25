@@ -8,11 +8,7 @@ const GAME_HEIGHT = 600;
 const CONSOLE_CLEAR_THRESHOLD = 200;
 const DASH_STAMINA_COST = 100;
 const STAMINA_RELOAD_SPEED = 0.25;
-<<<<<<< HEAD
 const AIR_STRAFING_SPEED_MULTIPLIER = 0.7;
-=======
-const AIR_STRAFING_SPEED_MULTIPLIER = 0.75;
->>>>>>> 8fa2ada (Test commit)
 const BASE_TIMELINE_FRAMERATE = 60;
 
 var settings = {
@@ -36,11 +32,7 @@ var settings = {
 var editor = {
     panel: document.querySelector('#gameEditor'),
     editing: false,
-<<<<<<< HEAD
-    modes: ["select", "draw"],
-=======
     modes: ["select", "draw", "move"],
->>>>>>> 8fa2ada (Test commit)
     mode: 0,
     activeObject: null,
     gridSize: 20,
@@ -49,10 +41,7 @@ var editor = {
         this.panel.querySelector('[editor-mode]').textContent = `Mode (${this.modes[this.mode]})`;
     },
     apply() {
-<<<<<<< HEAD
-=======
         if (!this.activeObject) return;
->>>>>>> 8fa2ada (Test commit)
         this.activeObject.position.x = Number.parseInt(this.panel.querySelector('#objectPosX ').value);
         this.activeObject.position.y = Number.parseInt(this.panel.querySelector('#objectPosY ').value);
         this.activeObject.size.x     = Number.parseInt(this.panel.querySelector('#objectSizeX').value);
@@ -118,10 +107,7 @@ var editor = {
     },
     unload() {
         this.panel.style.display = "none";
-<<<<<<< HEAD
-=======
         this.clearActiveObject();
->>>>>>> 8fa2ada (Test commit)
     }
 }
 
@@ -259,11 +245,7 @@ class Player {
         if (this.stamina.value < DASH_STAMINA_COST || this.isDashing || this.velocity.x === 0) return;
         this.isDashing = true;
         this.stamina.value -= DASH_STAMINA_COST;
-<<<<<<< HEAD
-        this.velocity.x *= 10;
-=======
         this.velocity.x *= 5;
->>>>>>> 8fa2ada (Test commit)
         this.velocity.clampX(-25, 25);
         setTimeout(() => {this.isDashing = false}, 200);
     }
@@ -598,22 +580,14 @@ function draw() {
         new Vector(0, -1).normal().displayUnit(centerOfPlayer, "#f00", 120);
         player.velocity.normal().displayUnit(centerOfPlayer, "#08f", 50);
         player.velocity.displayUnit(centerOfPlayer, "#6f6", 100);
-<<<<<<< HEAD
-        player.velocity.display(centerOfPlayer, "#f60", 10);
-=======
         player.velocity.display(centerOfPlayer, "#f88", 10);
->>>>>>> 8fa2ada (Test commit)
     }
     
     if (!editor.editing) return;
 
     let target = getObjectAtMouse();
 
-<<<<<<< HEAD
-    if (target && editor.mode == 0) {
-=======
     if (target && (editor.mode == 0 || editor.mode == 2)) {
->>>>>>> 8fa2ada (Test commit)
         ctx.lineWidth = 3;
         ctx.strokeStyle = "#80f";
         ctx.strokeRect(target.position.x + cameraOffset.x, target.position.y + cameraOffset.y, target.size.x, target.size.y);
@@ -722,8 +696,4 @@ document.onkeydown = (ev) => {
 
 document.onkeyup = (ev) => {
     keyStates[ev.key.toLowerCase()] = false;
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 8fa2ada (Test commit)
