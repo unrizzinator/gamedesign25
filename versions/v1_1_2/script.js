@@ -1,4 +1,5 @@
-const titleElement = document.querySelector('.title');
+const theaterBG = document.querySelector('#tbg');
+const gameContainer = document.querySelector('.game-container');
 const canvas = document.querySelector('canvas');
 const ctx = canvas.getContext('2d');
 const GRAVITY_STRENGTH = 1.98;
@@ -8,11 +9,7 @@ const GAME_HEIGHT = 600;
 const CONSOLE_CLEAR_THRESHOLD = 200;
 const DASH_STAMINA_COST = 100;
 const STAMINA_RELOAD_SPEED = 0.25;
-<<<<<<< HEAD
-const AIR_STRAFING_SPEED_MULTIPLIER = 0.7;
-=======
 const AIR_STRAFING_SPEED_MULTIPLIER = 0.75;
->>>>>>> 8fa2ada (Test commit)
 const BASE_TIMELINE_FRAMERATE = 60;
 
 var settings = {
@@ -27,20 +24,18 @@ var settings = {
         pause:   "p",
         gravity: "g",
         editor:  "e",
-        debug: "\\"
+        debug:   "\\",
+        delete:  "delete"
     },
     gravity: true,
-    debug: false
+    debug: true
 };
 
 var editor = {
     panel: document.querySelector('#gameEditor'),
     editing: false,
-<<<<<<< HEAD
-    modes: ["select", "draw"],
-=======
+    drawing: false,
     modes: ["select", "draw", "move"],
->>>>>>> 8fa2ada (Test commit)
     mode: 0,
     activeObject: null,
     gridSize: 20,
@@ -49,28 +44,25 @@ var editor = {
         this.panel.querySelector('[editor-mode]').textContent = `Mode (${this.modes[this.mode]})`;
     },
     apply() {
-<<<<<<< HEAD
-=======
         if (!this.activeObject) return;
->>>>>>> 8fa2ada (Test commit)
         this.activeObject.position.x = Number.parseInt(this.panel.querySelector('#objectPosX ').value);
         this.activeObject.position.y = Number.parseInt(this.panel.querySelector('#objectPosY ').value);
         this.activeObject.size.x     = Number.parseInt(this.panel.querySelector('#objectSizeX').value);
         this.activeObject.size.y     = Number.parseInt(this.panel.querySelector('#objectSizeY').value);
     },
-    shift(d) {
+    translate(d) {
         switch (d) {
             case 0:
-                this.activeObject.position.x -= 20;
+                this.activeObject.position.x -= editor.gridSize;
                 break;
             case 1:
-                this.activeObject.position.x += 20;
+                this.activeObject.position.x += editor.gridSize;
                 break;
             case 2:
-                this.activeObject.position.y -= 20;
+                this.activeObject.position.y -= editor.gridSize;
                 break;
             case 3:
-                this.activeObject.position.y += 20;
+                this.activeObject.position.y += editor.gridSize;
                 break;
             default:
                 break;
@@ -98,14 +90,31 @@ var editor = {
         this.panel.querySelector('#objectSizeX').value = this.activeObject.size.x;
         this.panel.querySelector('#objectSizeY').value = this.activeObject.size.y;
     },
+    getObjectById(n) {
+        for (let o of objects) {
+            if (o.id == n) return o;
+        }
+        return null;
+    },
     changeMode() {
         this.mode++;
         if (this.mode > this.modes.length - 1) this.mode = 0;
         this.clearActiveObject();
         this.panel.querySelector('[editor-mode]').textContent = `Mode (${this.modes[this.mode]})`;
     },
+    updateDraw() {
+        if (!this.drawing || !this.activeObject) return;
+        this.activeObject.size = new Vector(Math.floor((currMousePos.x - cameraOffset.x + canvas.width/2) / this.gridSize) * this.gridSize - this.activeObject.position.x, 
+                                            Math.floor((currMousePos.y - cameraOffset.y + canvas.height/2) / this.gridSize) * this.gridSize - this.activeObject.position.y);
+    },
     startDraw() {
-        if (this.mode != 1) return;
+        if (this.mode != 1 || this.drawing) return;
+        this.drawing = true;
+        editor.activeObject = new Platform(new Vector(Math.floor((currMousePos.x - cameraOffset.x + canvas.width/2) / this.gridSize) * this.gridSize, Math.floor((currMousePos.y - cameraOffset.y + canvas.height/2) / this.gridSize) * this.gridSize), new Vector(20, 20), "#fff");
+    },
+    stopDraw() {
+        if (this.mode != 1 || !this.drawing) return;
+        this.drawing = false;
     },
     destroy() {
         if (!this.activeObject) return;
@@ -118,10 +127,7 @@ var editor = {
     },
     unload() {
         this.panel.style.display = "none";
-<<<<<<< HEAD
-=======
         this.clearActiveObject();
->>>>>>> 8fa2ada (Test commit)
     }
 }
 
@@ -135,14 +141,14 @@ var nextID = 0;
 canvas.width = GAME_WIDTH;
 canvas.height = GAME_HEIGHT;
 
-var objects = [];
-
-function getObjectById(n) {
-    for (let o of objects) {
-        if (o.id == n) return o;
-    }
-    return null;
+function goFullscreen() {
+    if (!document.fullscreenElement) gameContainer.requestFullscreen();
+    canvas.width = window.outerWidth;
+    canvas.height = window.outerHeight;
+    theaterBG.style.display = "block";
 }
+
+var objects = [];
 
 class Vector {
     constructor(x, y) {
@@ -224,12 +230,54 @@ class Vector {
         ctx.lineTo(origin.x + ue.x, origin.y + ue.y);
         ctx.stroke();
     }
+
+    connect(v, c) {
+        if (!v) return;
+        ctx.strokeStyle = c ? c : "#09f";
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(v.x, v.y);
+        ctx.stroke();
+    }
+}
+
+function round(n, p) {
+    return Math.round(n * (10**p)) / (10**p);
+}
+
+function raycast(startPos, directionUnit, maxDistance, objects) {
+    let endX = startPos.x + directionUnit.x * maxDistance;
+    let endY = startPos.y + directionUnit.y * maxDistance;
+
+    let closestHit = null;
+    let minDist = maxDistance;
+
+    for (let obj of objects) {
+        let hit = checkLineIntersection(startPos, new Vector(endX, endY), obj);
+        if (hit && hit.distance < minDist) {
+            closestHit = hit;
+            minDist = hit.distance;
+        }
+    }
+
+    return closestHit || { position: new Vector(endX, endY), hit: false };
+}
+
+function checkLineIntersection(startPos, endPos, obj) {
+    if (endPos.x > obj.position.x &&
+        endPos.x < obj.position.x + obj.size.x &&
+        endPos.y > obj.position.y &&
+        endPos.y < obj.position.y + obj.size.y) {
+            let distance = Math.hypot(endPos.x - startPos.x, endPos.y - startPos.y);
+            return { position: endPos, distance: distance, hit: true, target: obj };
+    }
 }
 
 class Player {
     constructor(position, color) {
         this.id = nextID;
         this.type = "Player";
+        this.spawn = new Vector(0, 0);
         this.position = position ? position : new Vector(canvas.width / 2, canvas.height / 2);
         this.velocity = new Vector();
         this.stamina = {
@@ -259,18 +307,69 @@ class Player {
         if (this.stamina.value < DASH_STAMINA_COST || this.isDashing || this.velocity.x === 0) return;
         this.isDashing = true;
         this.stamina.value -= DASH_STAMINA_COST;
-<<<<<<< HEAD
-        this.velocity.x *= 10;
-=======
         this.velocity.x *= 5;
->>>>>>> 8fa2ada (Test commit)
         this.velocity.clampX(-25, 25);
         setTimeout(() => {this.isDashing = false}, 200);
     }
 }
 
-class Point {
+class Zone {
+    static zones = [];
+    entities = [];
 
+    constructor(identifier, position, size, visible, color) {
+        this.identifier = identifier;
+        this.position = position;
+        this.size = size;
+        this.visible = visible ? visible : false;
+        this.color = color ? color : "#f002";
+        Zone.zones.push(this);
+    }
+
+    getEntities() {
+        let _entities = [];
+        if (this.checkFor(player)) _entities.push(player);
+        this.entities = _entities;
+        return this.entities;
+    }
+
+    setVisible(state) {
+        if (typeof state != Boolean) return;
+        this.visible = state;
+    }
+    
+    destroy() {
+        Zone.zones.splice(Zone.zones.indexOf(this), 1);
+    }
+
+    checkFor(obj) {
+        if (!obj) return console.error("An object wasn't provided.");
+        if (!obj.position || !obj.size) return console.error("Object provided doesn't hold a position and/or size.");
+        if (obj.position.x + obj.size.x / 2 > this.position.x &&
+            obj.position.x + obj.size.x / 2 < this.position.x + this.size.x &&
+            obj.position.y + obj.size.y / 2 > this.position.y &&
+            obj.position.y + obj.size.y / 2 < this.position.y + this.size.y
+        ) {
+            return true;
+        }
+        return false;
+    }
+
+    static getZoneById(identifier) {
+        for (let zone of Zone.zones) {
+            if (zone.identifier == identifier) return zone;
+        }
+        return null;
+    }
+}
+
+class AITurret {
+    constructor(position) {
+        this.position = position;
+    }
+}
+
+class Point {
     static instances = [];
 
     constructor(position, value) {
@@ -415,11 +514,7 @@ function getObjectAtMouse() {
 }
 
 function reset() {
-    Platform.clearInstances();
-    Dialog.clearInstances();
-    Point.clearInstances();
-    player = null;
-    setup();
+    player = new Player(new Vector(240, 100), "#f08");
 }
 
 function pause() {
@@ -428,13 +523,16 @@ function pause() {
 
 function setup() {
     player = new Player(new Vector(240, 100), "#08f");
+
+    // new Zone("spawn", new Vector(0, 0), new Vector(600, 600), true);
+    new AITurret(new Vector(200, 900));
     
     new Platform(new Vector(-canvas.width * 5, canvas.height), new Vector(canvas.width * 7, canvas.height), "#202020");
     new Platform(new Vector(-100, 0), new Vector(100, 460), "#fff");
     new Platform(new Vector(-100, 480), new Vector(100, (canvas.height * 2) - 480), "#fff");
     new Platform(new Vector(canvas.width * 2, 0), new Vector(100, canvas.height * 2), "#fff");
 
-    new Platform(new Vector(600, 0), new Vector(400, 460), "#303030");
+    new Platform(new Vector(600, 0), new Vector(200, 460), "#303030");
     new Platform(new Vector(600, 480), new Vector(400, 120), "#fff");
     new Platform(new Vector(1000, 500), new Vector(60, 20), "#fff");
     new Platform(new Vector(1000, 560), new Vector(200, 20), "#fff");
@@ -453,6 +551,7 @@ function setup() {
     new Platform(new Vector(500, 120), new Vector(100, 20), "#fff");
     new Platform(new Vector(540, 0), new Vector(60, 20), "#fff");
 
+    new Bouncepad(new Vector(-40, -20), 12, new Vector(20, 20), "#ff8800");
     new Bouncepad(new Vector(0, 320), 12, new Vector(20, 20), "#69ff69");
     new Bouncepad(new Vector(1220, 580), 20, new Vector(60, 20), "#69ff69");
     new Bouncepad(new Vector(1280, 580), 50000, new Vector(60, 20), "#ff8800");
@@ -480,7 +579,7 @@ function clamp(value, min, max) {
 }
 
 function drawGraph() {
-    ctx.fillStyle = "#404040";
+    ctx.fillStyle = "#40404080";
     for (let _x = 0; _x < Math.floor(canvas.width + 50 / editor.gridSize); _x++) {
         let offset = cameraOffset.x % editor.gridSize;
         ctx.fillRect((_x * editor.gridSize) + offset, 0, 1, canvas.height);
@@ -552,13 +651,33 @@ function updatePhysics(deltaTime) {
     Platform.instances.forEach(p => {
         checkCollision(player, p);
     });
+
+    for (let zone of Zone.zones) {
+        let entities = zone.getEntities();
+        if (zone.identifier == "spawn") {
+            for (let entity of entities) {
+                entity.size.x = 50;
+                entity.size.y = 50;
+            }
+        }
+    }
 }
 
 function draw() {
     ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    if (editor.editing) drawGraph();
+    ctx.fillStyle = "#fff4";
+    ctx.font = "256px code";
+    ctx.fillText("00", canvas.width/3, canvas.height/1.5);
+
+    for (let zone of Zone.zones) {
+        ctx.fillStyle = zone.color;
+        ctx.fillRect(zone.position.x + cameraOffset.x, zone.position.y + cameraOffset.y, zone.size.x, zone.size.y);
+    }
+
+    // if (editor.editing) 
+    drawGraph();
 
     Platform.instances.forEach(p => {
         ctx.fillStyle = p.color;
@@ -580,40 +699,36 @@ function draw() {
                  player.size.x + Math.max(-8, -playerSizeSquashX), 
                  player.size.y + Math.max(-8, -playerSizeSquashY));
 
-    let offsetX = cameraOffset.x % editor.gridSize;
-    let offsetY = cameraOffset.y % editor.gridSize;
-
     ctx.fillStyle = "#08f";
     ctx.fillRect(0, canvas.height - 5, (player.stamina.value/player.stamina.max)*canvas.width, 5);
 
     if (settings.debug) {
         ctx.fillStyle = "#0008";
-        ctx.fillRect(40, 40, 200, 80);
+        ctx.fillRect(40, 40, 200, 150);
         ctx.fillStyle = "white";
-        ctx.fillText(`Vel x: ${player.velocity.x.toPrecision(4)}`, 50, 68);
-        ctx.fillText(`Vel y: ${player.velocity.y.toPrecision(4)}`, 50, 104);
+        ctx.fillText(`Vel x: ${round(player.velocity.x, 2)}`, 50, 68);
+        ctx.fillText(`Vel y: ${round(player.velocity.y, 2)}`, 50, 104);
+        ctx.fillText(`Pos x: ${round(player.position.x, 2)}`, 50, 140);
+        ctx.fillText(`Pos y: ${round(player.position.y, 2)}`, 50, 176);
 
         let centerOfPlayer = player.position.addVector(player.size.mul(0.5, 0.5));
         ctx.lineWidth = 3;
         new Vector(0, -1).normal().displayUnit(centerOfPlayer, "#f00", 120);
         player.velocity.normal().displayUnit(centerOfPlayer, "#08f", 50);
         player.velocity.displayUnit(centerOfPlayer, "#6f6", 100);
-<<<<<<< HEAD
-        player.velocity.display(centerOfPlayer, "#f60", 10);
-=======
         player.velocity.display(centerOfPlayer, "#f88", 10);
->>>>>>> 8fa2ada (Test commit)
+
+        let newRay = raycast(centerOfPlayer, new Vector(0, 1), 100, Platform.instances);
+        if (newRay.hit) {
+            centerOfPlayer.addVector(cameraOffset).connect(newRay.position.addVector(cameraOffset), "#fff");
+        }
     }
     
     if (!editor.editing) return;
 
     let target = getObjectAtMouse();
 
-<<<<<<< HEAD
-    if (target && editor.mode == 0) {
-=======
     if (target && (editor.mode == 0 || editor.mode == 2)) {
->>>>>>> 8fa2ada (Test commit)
         ctx.lineWidth = 3;
         ctx.strokeStyle = "#80f";
         ctx.strokeRect(target.position.x + cameraOffset.x, target.position.y + cameraOffset.y, target.size.x, target.size.y);
@@ -624,13 +739,6 @@ function draw() {
         ctx.strokeStyle = "#f80";
         ctx.strokeRect(editor.activeObject.position.x + cameraOffset.x, editor.activeObject.position.y + cameraOffset.y, editor.activeObject.size.x, editor.activeObject.size.y);
     }
-
-    // ctx.lineWidth = 2;
-    // ctx.strokeStyle = "orange";
-    // ctx.strokeRect(Math.floor((currMousePos.x - offsetX + canvas.width/2) / editor.gridSize) * editor.gridSize + offsetX, 
-    //                Math.floor((currMousePos.y - offsetY + canvas.height/2) / editor.gridSize) * editor.gridSize + offsetY,
-    //                editor.gridSize,
-    //                editor.gridSize);
 
     ctx.fillStyle = "#fff";
 }
@@ -643,18 +751,17 @@ function loop(t) {
     lastDeltaTime = t;
 
     if (!paused && deltaTime) {
+        if (!player) return;
         player.stamina.value += STAMINA_RELOAD_SPEED;
         player.stamina.value = clamp(player.stamina.value, player.stamina.min, player.stamina.max);
         var targetCameraOffset = new Vector(
             -(player.position.x + player.size.x / 2) + canvas.width / 2,
             -(player.position.y + player.size.y / 2) + canvas.height / 2);
-        cameraOffset.x += (targetCameraOffset.x - cameraOffset.x) * 0.1;
+        cameraOffset.x += (targetCameraOffset.x - cameraOffset.x) * 0.03;
         cameraOffset.y += (targetCameraOffset.y - cameraOffset.y) * 0.1;
 
         updatePhysics(deltaTime);
         draw();
-
-        titleElement.innerHTML = `Score: ${score}`;
     }
     requestAnimationFrame(loop);
 }
@@ -666,6 +773,7 @@ canvas.onmousemove = (ev) => {
     const bb = canvas.getBoundingClientRect();
     currMousePos.x = ev.clientX - bb.left - canvas.width/2;
     currMousePos.y = ev.clientY - bb.top - canvas.height/2;
+    if (editor.drawing) editor.updateDraw();
 }
 
 canvas.onmousedown = (ev) => {
@@ -678,12 +786,16 @@ canvas.onmousedown = (ev) => {
                 else editor.clearActiveObject();
                 break;
             case 1:
-                
+                editor.startDraw();
                 break;
             default:
                 break;
         }
     }
+}
+
+document.onmouseup = () => {
+    if (editor.editing && editor.mode == 1) editor.stopDraw();
 }
 
 document.onkeydown = (ev) => {
@@ -714,6 +826,9 @@ document.onkeydown = (ev) => {
         case settings.controls.debug:
             toggleDebug();
             break;
+        case settings.controls.delete:
+            editor.destroy();
+            break;
         default:
             null;
             break;
@@ -722,8 +837,12 @@ document.onkeydown = (ev) => {
 
 document.onkeyup = (ev) => {
     keyStates[ev.key.toLowerCase()] = false;
-<<<<<<< HEAD
 }
-=======
+
+document.onfullscreenchange = () => {
+    if (!document.fullscreenElement) {
+        canvas.width = 900;
+        canvas.height = 600;
+        theaterBG.style.display = "none";
+    }
 }
->>>>>>> 8fa2ada (Test commit)

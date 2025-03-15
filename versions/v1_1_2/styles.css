@@ -15,15 +15,9 @@
 }
 
 :root {
-<<<<<<< HEAD
-    --theme-primary: #000;
-    --theme-secondary: #ff3e3e;
-    --font-color: rgb(255, 255, 255);
-=======
-    --theme-primary: #efefef;
+    --theme-primary: #181818;
     --theme-secondary: #ff3e3e;
     --font-color: rgb(0, 0, 0);
->>>>>>> 8fa2ada (Test commit)
 }
 
 body {
@@ -35,14 +29,21 @@ body {
 }
 
 .dotted-bg {
-<<<<<<< HEAD
-    background-image: radial-gradient(black 1px, transparent 1px);
-=======
     background-image: radial-gradient(#0004 1px, transparent 1px);
->>>>>>> 8fa2ada (Test commit)
     background-size: 5px 5px;
     background-repeat: repeat;
     background-position: 50% 50%;
+}
+
+#tbg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    background: black;
+    z-index: 1;
 }
 
 .container {
@@ -59,15 +60,30 @@ body {
     z-index: 2;
 }
 
-.container .title {
+.container .topbar {
     width: 100%;
     height: 3rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
     color: var(--font-color);
     font-size: 1.25rem;
     font-family: 'bungee';
+}
+
+.topbar .fs {
+    position: absolute;
+    right: 1rem;
+    width: 2rem;
+    height: 2rem;
+    grid-column: 10;
+    background-color: rgb(0, 160, 255);
+    background-image: url(../../src/svg/fullscreen.svg);
+    background-size: 1.5rem 1.5rem;
+    background-position: center center;
+    background-repeat: no-repeat;
+
+    &:hover {
+        left: unset;
+        top: unset;
+    }
 }
 
 .container .game-container {
@@ -88,8 +104,8 @@ body {
     top: 50%;
     left: calc(100% - 1rem);
     transform: translate(-100%, -50%);
-    width: 10rem;
-    height: calc(100% - 4rem);
+    width: 160px;
+    height: 540px;
     padding: .5rem;
     display: none;
     grid-template-columns: repeat(2, 1fr);
@@ -147,7 +163,7 @@ body {
     gap: 1rem;
 }
 
-.panel button {
+button {
     position: relative;
     background: var(--theme-secondary);
     color: white;
@@ -163,8 +179,4 @@ body {
         left: 3px;
         box-shadow: 2px 2px 0px 0px #0003;
     }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 8fa2ada (Test commit)

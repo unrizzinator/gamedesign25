@@ -11,7 +11,12 @@ const versions = [
     "1.0.7",
     "1.0.8",
     "1.1.0",
+<<<<<<< HEAD
     "1.1.1"
+=======
+    "1.1.1",
+    "1.1.2",
+>>>>>>> 8fa2ada (Test commit)
 ]
 
 function fillList() {
@@ -23,4 +28,8 @@ function fillList() {
     });
 }
 
+<<<<<<< HEAD
 fillList();
+=======
+fillList();
+>>>>>>> 8fa2ada (Test commit)
