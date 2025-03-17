@@ -137,6 +137,7 @@ var player = null;
 var keyStates = {};
 var score = 0;
 var nextID = 0;
+var cameraSubject = null;
 
 canvas.width = GAME_WIDTH;
 canvas.height = GAME_HEIGHT;
@@ -547,6 +548,7 @@ function getObjectAtMouse() {
 function reset() {
     const _tmpPlayerSize = new Vector().addVector(player.size);
     player = new Player(spawnpoint.add(-(_tmpPlayerSize.x/2), -_tmpPlayerSize.y - 20), "#fff");
+    cameraSubject = player;
 }
 
 function pause() {
@@ -555,6 +557,7 @@ function pause() {
 
 function setup() {
     player = new Player(spawnpoint.add(-10, -40), "#fff");
+    cameraSubject = player;
     
     // Floor
     new Platform(new Vector(-(Number.MAX_SAFE_INTEGER/2), 0), new Vector(Number.MAX_SAFE_INTEGER, canvas.height), "#0a0a0a");
@@ -640,7 +643,7 @@ function checkCollision(player, rect) {
                 player.velocity.y = 0;
             } else if (rect instanceof Checkpoint) {
                 player.velocity.y = 0;
-                player.setSpawnpoint(rect.position.add(rect.size.x/2, rect.position.y));
+                player.setSpawnpoint(rect.position.add(rect.size.x/2, rect.size.y/2));
             } else if(rect instanceof Bouncepad) {
                 player.velocity.y = -rect.power;
             }
@@ -783,11 +786,12 @@ function loop(t) {
 
     if (!paused && deltaTime) {
         if (!player) return;
+        if (!cameraSubject) cameraSubject = player;
         player.stamina.value += STAMINA_RELOAD_SPEED;
         player.stamina.value = clamp(player.stamina.value, player.stamina.min, player.stamina.max);
         var targetCameraOffset = new Vector(
-            -(player.position.x + player.size.x / 2) + canvas.width / 2,
-            -(player.position.y + player.size.y / 2) + canvas.height / 2);
+            -(cameraSubject.position.x + cameraSubject.size.x / 2) + canvas.width / 2,
+            -(cameraSubject.position.y + cameraSubject.size.y / 2) + canvas.height / 2);
         cameraOffset.x += (targetCameraOffset.x - cameraOffset.x) * 0.03;
         cameraOffset.y += (targetCameraOffset.y - cameraOffset.y) * 0.1;
 
