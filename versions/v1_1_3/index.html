@@ -14,6 +14,27 @@
             <button class="fs" onclick="goFullscreen()"></button>
         </div>
         <div class="game-container">
+            <div class="ui">
+                <div class="currency">
+                    <img src="../../src/img/Coin128x128.png">
+                    <div id="currencyDisplay">0</div>
+                </div>
+                <div class="window-container">
+                    <div class="window active" noCurrency windowId="mainMenu">
+                        <h1>Some platform jumper game</h1>
+                        <button class="coolBtn" onclick="start()">Start</button>
+                    </div>
+                    <div class="window" windowId="pauseMenu">
+                        <div class="button-list">
+                            <button class="coolBtn" onclick="pause()">Resume</button>
+                            <button class="coolBtn" onclick="openWindow('shop')">Shop</button>
+                        </div>
+                    </div>
+                    <div class="window" windowId="shopMenu">
+
+                    </div>
+                </div>
+            </div>
             <canvas></canvas>
             <div id="gameEditor">
                 <input type="text" id="objectId" placeholder="id" style="grid-column: 1/3;" readonly>
@@ -32,10 +53,10 @@
             </div>
         </div>
         <div class="panel">
-            <button onclick="reset()">Reset (R)</button>
-            <button onclick="pause()">Pause (P)</button>
-            <button onclick="toggleGravity()">Toggle gravity (G)</button>
-            <button onclick="toggleEditor()">Editor (E)</button>
+            <button class="coolBtn" onclick="reset()">Reset (R)</button>
+            <button class="coolBtn" onclick="pause()">Pause (P)</button>
+            <button class="coolBtn" onclick="toggleGravity()">Toggle gravity (G)</button>
+            <button class="coolBtn" onclick="toggleEditor()">Editor (E)</button>
         </div>
     </div>
 </body>

@@ -8,6 +8,10 @@
     src: url(../../src/fonts/Fira_Code/FiraCode-VariableFont_wght.ttf);
 }
 
+* {
+    font-family: 'bungee';
+}
+
 @keyframes rainbow-background {
     0% {background-color: red;}
     50% {background-color: lime;}
@@ -33,6 +37,26 @@ body {
     background-size: 5px 5px;
     background-repeat: repeat;
     background-position: 50% 50%;
+}
+
+.coolBtn {
+    position: relative;
+    background: var(--theme-secondary);
+    color: white;
+    font-family: 'bungee';
+    border: 1px solid black;
+    outline: none;
+    box-shadow: 5px 5px 0px 0px #0003;
+    width: 100px;
+    height: 40px;
+    cursor: pointer;
+    transition: 70ms;
+
+    &:hover {
+        top: 3px;
+        left: 3px;
+        box-shadow: 2px 2px 0px 0px #0003;
+    }
 }
 
 #tbg {
@@ -74,6 +98,8 @@ body {
     width: 2rem;
     height: 2rem;
     grid-column: 10;
+    border: 1px solid black;
+    outline: none;
     background-color: rgb(0, 160, 255);
     background-image: url(../../src/svg/fullscreen.svg);
     background-size: 1.5rem 1.5rem;
@@ -98,6 +124,118 @@ body {
     position: relative;
     background: #fafafa;
 }
+
+.game-container .ui {
+    position: absolute;
+    pointer-events: none;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 5;
+}
+
+.ui .currency {
+    position: absolute;
+    top: 1rem;
+    left: calc(100% - 1rem);
+    transform: translate(-100%, 0%);
+    min-width: 100px;
+    padding: .5rem;
+    width: fit-content;
+    height: 40px;
+    background: #0004;
+    display: flex;
+    flex-direction: row;
+    z-index: 2;
+}
+
+.currency img {
+    position: relative;
+    top: 50%;
+    left: 0;
+    transform: translate(0%, -50%);
+    width: 32px;
+    height: 32px;
+}
+
+.currency #currencyDisplay {
+    position: relative;
+    top: 50%;
+    left: 1rem;
+    transform: translate(0%, -50%);
+    margin-right: 2rem;
+    width: fit-content;
+    height: 100%;
+    font-size: 24px;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.ui .window-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #0002;
+    z-index: 1;
+}
+
+.window-container .window {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+
+    &.active {
+        opacity: 1;
+        pointer-events: all;
+    }
+}
+
+/* Begin windows */
+
+.window[windowId="mainMenu"] {
+    background: black;
+
+    & h1 {
+        position: absolute;
+        top: 30%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: fit-content;
+        height: fit-content;
+        color: white;
+    }
+
+    & button {
+        position: absolute;
+        top: 60%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 100px;
+        height: 40px;
+    }
+}
+
+.window[windowId="pauseMenu"] {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: .5rem; 
+}
+
+.window[windowId="shopMenu"] {
+    
+}
+
+/* End windows */
 
 .game-container #gameEditor {
     position: absolute;
@@ -163,20 +301,7 @@ body {
     gap: 1rem;
 }
 
-button {
-    position: relative;
-    background: var(--theme-secondary);
-    color: white;
-    font-family: 'bungee';
-    border: 1px solid black;
-    outline: none;
-    box-shadow: 5px 5px 0px 0px #0003;
-    cursor: pointer;
-    transition: 70ms;
-
-    &:hover {
-        top: 3px;
-        left: 3px;
-        box-shadow: 2px 2px 0px 0px #0003;
-    }
+.panel button {
+    width: 100%;
+    height: 100%;
 }

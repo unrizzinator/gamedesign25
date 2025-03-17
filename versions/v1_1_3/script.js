@@ -1,6 +1,9 @@
 const theaterBG = document.querySelector('#tbg');
 const gameContainer = document.querySelector('.game-container');
 const canvas = document.querySelector('canvas');
+const ui = document.querySelector('.ui');
+const windowContainer = document.querySelector('.window-container');
+const currencyDisplay = ui.querySelector('#currencyDisplay');
 const ctx = canvas.getContext('2d');
 const GRAVITY_STRENGTH = 1.98;
 const GRAVITY_SPEED_MULTIPLIER = 0.1;
@@ -14,6 +17,8 @@ const BASE_TIMELINE_FRAMERATE = 60;
 
 let cW = canvas.width = GAME_WIDTH;
 let cH = canvas.height = GAME_HEIGHT;
+
+const UIWindows = document.querySelectorAll('.window');
 
 const COIN_128 = new Image();
 COIN_128.src = "../../src/img/Coin128x128.png";
@@ -58,6 +63,7 @@ var editor = {
     panel: document.querySelector('#gameEditor'),
     editing: false,
     drawing: false,
+    dragging: false,
     modes: ["select", "draw", "move"],
     mode: 0,
     activeObject: null,
@@ -127,8 +133,8 @@ var editor = {
     },
     updateDraw() {
         if (!this.drawing || !this.activeObject) return;
-        this.activeObject.size = new Vector(Math.floor((currMousePos.x - cameraOffset.x + cW/2) / this.gridSize) * this.gridSize - this.activeObject.position.x, 
-                                            Math.floor((currMousePos.y - cameraOffset.y + cH/2) / this.gridSize) * this.gridSize - this.activeObject.position.y);
+        this.activeObject.size = new Vector(Math.round((currMousePos.x - cameraOffset.x + cW/2) / this.gridSize) * this.gridSize - this.activeObject.position.x, 
+                                            Math.round((currMousePos.y - cameraOffset.y + cH/2) / this.gridSize) * this.gridSize - this.activeObject.position.y);
     },
     startDraw() {
         if (this.mode != 1 || this.drawing) return;
@@ -138,6 +144,23 @@ var editor = {
     stopDraw() {
         if (this.mode != 1 || !this.drawing) return;
         this.drawing = false;
+    },
+    updateMove() {
+        if (!this.dragging || !this.activeObject) return;
+        this.activeObject.position = new Vector(Math.round((currMousePos.x - cameraOffset.x + cW/2) / this.gridSize) * this.gridSize - this.activeObject.position.x, 
+                                                Math.round((currMousePos.y - cameraOffset.y + cH/2) / this.gridSize) * this.gridSize - this.activeObject.position.y);
+        console.log('Moving');
+    },
+    startMove() {
+        if (this.mode != 2 || this.dragging) return;
+        this.drawing = true;
+        editor.setActiveObject(getObjectAtMouse());
+    },
+    stopMove() {
+        if (this.mode != 2 || !this.dragging) return;
+        this.drawing = false;
+        editor.clearActiveObject();
+        console.log('Move end');
     },
     destroy() {
         if (!this.activeObject) return;
@@ -155,7 +178,8 @@ var editor = {
 }
 
 var backgroundColor = "#101010";
-var paused = false;
+var hasStarted = false;
+var paused = true;
 var player = null;
 var keyStates = {};
 var currHighScore = 0;
@@ -580,7 +604,10 @@ function reset() {
 }
 
 function pause() {
+    if (!hasStarted) return;
     paused = !paused;
+    if (paused) openWindow("pauseMenu");
+    else exitWindow();
 }
 
 function setup() {
@@ -721,10 +748,10 @@ function draw() {
     ctx.fillText(`${Math.round(score)}`, 50, 200);
 
     if (!editor.editing) {
-        ctx.fillStyle = "white";
+        ctx.fillStyle = "#fff6";
         ctx.fillRect(player.position.x + cameraOffset.x - (dashLineSpan * dashGuideScale - 10), player.position.y + cameraOffset.y, 2, 20);
         ctx.fillRect(player.position.x + cameraOffset.x + (dashLineSpan * dashGuideScale + 10), player.position.y + cameraOffset.y, 2, 20);
-        ctx.fillStyle = "#fff4";
+        ctx.fillStyle = "#fff2";
         for (let i = 0; i < 9; i++) {
             ctx.fillRect(player.position.x + cameraOffset.x - (dashLineSpan * dashGuideScale - 10) + (((dashLineSpan * dashGuideScale * 2)/8)*i), player.position.y + cameraOffset.y + 5, 1, 10);
         }
@@ -784,13 +811,6 @@ function draw() {
             centerOfPlayer.addVector(cameraOffset).connect(newRay.position.addVector(cameraOffset), "#fff");
         }
     }
-
-    ctx.fillStyle = "#000b";
-    ctx.fillRect(cW - 170, 20, 160, 50);
-    ctx.drawImage(COIN_128, cW - 160, 28, 32, 32);
-    ctx.font = "24px code";
-    ctx.fillStyle = "#fff";
-    ctx.fillText(coins, cW - 120, 52);
     
     if (!editor.editing) return;
 
@@ -819,11 +839,12 @@ function loop(t) {
     lastDeltaTime = t;
 
     score = Math.floor(Math.abs(player.position.y + 20) / 10);
-    if (score > 25 && score - currHighScore) {
+    if (score > 25 && score - currHighScore > 0) {
         coins += score - currHighScore;
         cookie.set("coins", coins);
         currHighScore = score;
     }
+    currencyDisplay.textContent = coins.toLocaleString();
 
     objects = objects.filter(o => !o.toBeDestroyed);
 
@@ -845,14 +866,39 @@ function loop(t) {
     requestAnimationFrame(loop);
 }
 
-setup();
-loop();
+function exitWindow() {
+    for (let w of UIWindows) {
+        w.classList.remove("active");
+        windowContainer.style.backdropFilter = "none";
+    }
+}
+
+function openWindow(windowId) {
+    exitWindow();
+    for (let i = 0; i < UIWindows.length; i++) {
+        let window = UIWindows[i];
+        if (window.getAttribute("windowId") == windowId) {
+            window.classList.add('active');
+            windowContainer.style.backdropFilter = "blur(8px)";
+        }
+    }
+}
+
+function start() {
+    setup();
+    paused = false;
+    exitWindow();
+    loop();
+    hasStarted = true;
+}
 
 canvas.onmousemove = (ev) => {
     const bb = canvas.getBoundingClientRect();
     currMousePos.x = ev.clientX - bb.left - cW/2;
     currMousePos.y = ev.clientY - bb.top - cH/2;
     if (editor.drawing) editor.updateDraw();
+    if (editor.dragging) editor.updateMove();
+
 }
 
 canvas.onmousedown = (ev) => {
@@ -867,6 +913,9 @@ canvas.onmousedown = (ev) => {
             case 1:
                 editor.startDraw();
                 break;
+            case 2:
+                editor.startMove();
+                break;
             default:
                 break;
         }
@@ -874,7 +923,8 @@ canvas.onmousedown = (ev) => {
 }
 
 document.onmouseup = () => {
-    if (editor.editing && editor.mode == 1) editor.stopDraw();
+    if (editor.drawing) editor.stopDraw();
+    if (editor.dragging) editor.stopMove();
 }
 
 document.onkeydown = (ev) => {
@@ -928,4 +978,4 @@ document.onfullscreenchange = () => {
 
 const coinsLastSaved = cookie.get("coins");
 coins = coinsLastSaved ? Number.parseInt(coinsLastSaved) : 0;
-console.log(`Last saved: ${coinsLastSaved}`);
+currencyDisplay.textContent = coins.toLocaleString();
