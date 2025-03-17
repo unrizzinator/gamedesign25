@@ -12,6 +12,29 @@ const STAMINA_RELOAD_SPEED = 0.25;
 const AIR_STRAFING_SPEED_MULTIPLIER = 0.75;
 const BASE_TIMELINE_FRAMERATE = 60;
 
+let cW = canvas.width = GAME_WIDTH;
+let cH = canvas.height = GAME_HEIGHT;
+
+const COIN_128 = new Image();
+COIN_128.src = "../../src/img/Coin128x128.png";
+
+const cookie = {
+    set(name, value) {
+        document.cookie = `${name}=${value}; expires="Fri, 01 Jan 2027 00:00:00 GMT; path=/"`;
+    },
+    get(name) {
+        console.log(`Requesting ${name}`);
+        const cookies = document.cookie.split("; ");
+        console.log(cookies);
+        const cookie = cookies.find(r => r.startsWith(name + "="))?.split("=")[1] || null;
+        console.log(`Found ${cookie}`);
+        return cookie;
+    },
+    remove(name) {
+        document.cookie = `${name}=""; expires="Fri, 01 Jan 1970 00:00:00 GMT; path=/"`;
+    }
+}
+
 var settings = {
     controls: {
         left:    "a",
@@ -104,13 +127,13 @@ var editor = {
     },
     updateDraw() {
         if (!this.drawing || !this.activeObject) return;
-        this.activeObject.size = new Vector(Math.floor((currMousePos.x - cameraOffset.x + canvas.width/2) / this.gridSize) * this.gridSize - this.activeObject.position.x, 
-                                            Math.floor((currMousePos.y - cameraOffset.y + canvas.height/2) / this.gridSize) * this.gridSize - this.activeObject.position.y);
+        this.activeObject.size = new Vector(Math.floor((currMousePos.x - cameraOffset.x + cW/2) / this.gridSize) * this.gridSize - this.activeObject.position.x, 
+                                            Math.floor((currMousePos.y - cameraOffset.y + cH/2) / this.gridSize) * this.gridSize - this.activeObject.position.y);
     },
     startDraw() {
         if (this.mode != 1 || this.drawing) return;
         this.drawing = true;
-        editor.activeObject = new Platform(new Vector(Math.floor((currMousePos.x - cameraOffset.x + canvas.width/2) / this.gridSize) * this.gridSize, Math.floor((currMousePos.y - cameraOffset.y + canvas.height/2) / this.gridSize) * this.gridSize), new Vector(20, 20), "#fff");
+        editor.activeObject = new Platform(new Vector(Math.floor((currMousePos.x - cameraOffset.x + cW/2) / this.gridSize) * this.gridSize, Math.floor((currMousePos.y - cameraOffset.y + cH/2) / this.gridSize) * this.gridSize), new Vector(20, 20), "#fff");
     },
     stopDraw() {
         if (this.mode != 1 || !this.drawing) return;
@@ -131,21 +154,20 @@ var editor = {
     }
 }
 
-var backgroundColor = "#080808";
+var backgroundColor = "#101010";
 var paused = false;
 var player = null;
 var keyStates = {};
+var currHighScore = 0;
+var coins = 0;
 var score = 0;
 var nextID = 0;
 var cameraSubject = null;
 
-canvas.width = GAME_WIDTH;
-canvas.height = GAME_HEIGHT;
-
 function goFullscreen() {
     if (!document.fullscreenElement) gameContainer.requestFullscreen();
-    canvas.width = window.outerWidth;
-    canvas.height = window.outerHeight;
+    cW = canvas.width = window.outerWidth;
+    cH = canvas.height = window.outerHeight;
     theaterBG.style.display = "block";
 }
 
@@ -280,7 +302,7 @@ class Player {
     constructor(position, color) {
         this.id = nextID;
         this.type = "Player";
-        this.position = position ? position : new Vector(canvas.width / 2, canvas.height / 2);
+        this.position = position ? position : new Vector(cW / 2, cH / 2);
         this.velocity = new Vector();
         this.stamina = {
             min: 0,
@@ -412,7 +434,7 @@ class Dialog {
         this.text = text;
         this.color = color ? color : "#fff";
         this.size = new Vector(ctx.measureText(this.text).width, ctx.measureText(this.text).fontBoundingBoxAscent + ctx.measureText(this.text).fontBoundingBoxDescent);
-        this.position = position ? position : new Vector(canvas.width / 2, canvas.height / 2);
+        this.position = position ? position : new Vector(cW / 2, cH / 2);
         Dialog.instances.push(this);
         objects.push(this);
         nextID++;
@@ -534,7 +556,7 @@ var currMousePos = new Vector();
 function getObjectAtMouse() {
     var pc = new Vector(currMousePos.x, currMousePos.y);
         pc = pc.subVector(cameraOffset);
-        pc = pc.add(canvas.width/2, canvas.height/2);
+        pc = pc.add(cW/2, cH/2);
     for (let o of objects) {
         if (o.type == "Platform" || o.type == "Bouncepad") {
             if (pc.x > o.position.x && pc.x < o.position.x + o.size.x &&
@@ -561,7 +583,7 @@ function setup() {
     cameraSubject = player;
     
     // Floor
-    new Platform(new Vector(-(Number.MAX_SAFE_INTEGER/2), 0), new Vector(Number.MAX_SAFE_INTEGER, canvas.height), "#0a0a0a");
+    new Platform(new Vector(-(Number.MAX_SAFE_INTEGER/2), 0), new Vector(Number.MAX_SAFE_INTEGER, cH), "#0a0a0a");
 
     // Walls
     new Platform(new Vector(-2000 - 100, -Number.MAX_SAFE_INTEGER/4), new Vector(100, Number.MAX_SAFE_INTEGER/2), "#fff0");
@@ -591,13 +613,13 @@ function clamp(value, min, max) {
 
 function drawGraph() {
     ctx.fillStyle = "#40404040";
-    for (let _x = 0; _x < Math.floor(canvas.width + 50 / editor.gridSize); _x++) {
+    for (let _x = 0; _x < Math.floor(cW + 50 / editor.gridSize); _x++) {
         let offset = cameraOffset.x % editor.gridSize;
-        ctx.fillRect((_x * editor.gridSize) + offset, 0, 1, canvas.height);
+        ctx.fillRect((_x * editor.gridSize) + offset, 0, 1, cH);
     }
-    for (let _y = 0; _y < Math.floor(canvas.height / editor.gridSize); _y++) {
+    for (let _y = 0; _y < Math.floor(cH / editor.gridSize); _y++) {
         let offset = cameraOffset.y % editor.gridSize;
-        ctx.fillRect(0, (_y * editor.gridSize) + offset, canvas.width, 1);
+        ctx.fillRect(0, (_y * editor.gridSize) + offset, cW, 1);
     }
 }
 
@@ -687,35 +709,14 @@ function updatePhysics(deltaTime) {
 
 function draw() {
     ctx.fillStyle = backgroundColor;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, cW, cH);
 
     ctx.fillStyle = "#ffffff0a";
     ctx.font = "200px code";
     ctx.fillText(`${Math.round(score)}`, 50, 200);
 
-    // for (let zone of Zone.zones) {
-    //     ctx.fillStyle = zone.color;
-    //     ctx.fillRect(zone.position.x + cameraOffset.x, zone.position.y + cameraOffset.y, zone.size.x, zone.size.y);
-    // }
-    
     // if (editor.editing)
     drawGraph();
-
-    // for (let c of Checkpoint.instances) {
-    //     ctx.fillStyle = c.color;
-    //     ctx.fillRect(c.position.x + cameraOffset.x, c.position.y + cameraOffset.y, c.size.x, c.size.y);
-    // }
-
-    // for (let p of Platform.instances) {
-    //     ctx.fillStyle = p.color;
-    //     ctx.fillRect(p.position.x + cameraOffset.x, p.position.y + cameraOffset.y, p.size.x, p.size.y);
-    // }
-
-    // for (let d of Dialog.instances) {
-    //     ctx.fillStyle = d.color;
-    //     ctx.font = "24px Arial";
-    //     ctx.fillText(d.text, d.position.x + cameraOffset.x, d.position.y + cameraOffset.y);
-    // }
 
     for (let o of objects) {
         if (o instanceof Platform) {
@@ -730,7 +731,7 @@ function draw() {
             ctx.fillText(o.text, o.position.x + cameraOffset.x, o.position.y + cameraOffset.y);
         } else if (o instanceof Zone) {
             ctx.fillStyle = o.color;
-            ctx.fillRect(o.position.x + cameraOffset.x, o.position.y + cameraOffset.y, o.size.x, o.size.y);
+            ctx.fillRect(o.position.x + cameraOffset.x, o.position.y + cameraOffset.y, o.size.x, o.size.y); 
         }
     }
 
@@ -744,7 +745,7 @@ function draw() {
                  player.size.y + Math.max(-8, -playerSizeSquashY));
 
     ctx.fillStyle = "#08f";
-    ctx.fillRect(0, canvas.height - 5, (player.stamina.value/player.stamina.max)*canvas.width, 5);
+    ctx.fillRect(0, cH - 5, (player.stamina.value/player.stamina.max)*cW, 5);
 
     if (settings.debug) {
         ctx.fillStyle = "#0008";
@@ -768,6 +769,13 @@ function draw() {
             centerOfPlayer.addVector(cameraOffset).connect(newRay.position.addVector(cameraOffset), "#fff");
         }
     }
+
+    ctx.fillStyle = "#000b";
+    ctx.fillRect(cW - 170, 20, 160, 50);
+    ctx.drawImage(COIN_128, cW - 160, 28, 32, 32);
+    ctx.font = "24px code";
+    ctx.fillStyle = "#fff";
+    ctx.fillText(coins, cW - 120, 52);
     
     if (!editor.editing) return;
 
@@ -796,6 +804,12 @@ function loop(t) {
     lastDeltaTime = t;
 
     score = Math.floor(Math.abs(player.position.y + 20) / 10);
+    if (score > 25 && score > currHighScore) {
+        coins += Math.floor(score - currHighScore);
+        cookie.set("coins", coins);
+        currHighScore = score;
+    }
+
     objects = objects.filter(o => !o.toBeDestroyed);
 
     if (!paused && deltaTime) {
@@ -804,8 +818,8 @@ function loop(t) {
         player.stamina.value += STAMINA_RELOAD_SPEED;
         player.stamina.value = clamp(player.stamina.value, player.stamina.min, player.stamina.max);
         var targetCameraOffset = new Vector(
-            -(cameraSubject.position.x + cameraSubject.size.x / 2) + canvas.width / 2,
-            -(cameraSubject.position.y + cameraSubject.size.y / 2) + canvas.height / 2);
+            -(cameraSubject.position.x + cameraSubject.size.x / 2) + cW / 2,
+            -(cameraSubject.position.y + cameraSubject.size.y / 2) + cH / 2);
         cameraOffset.x += (targetCameraOffset.x - cameraOffset.x) * 0.03;
         cameraOffset.y += (targetCameraOffset.y - cameraOffset.y) * 0.1;
 
@@ -820,8 +834,8 @@ loop();
 
 canvas.onmousemove = (ev) => {
     const bb = canvas.getBoundingClientRect();
-    currMousePos.x = ev.clientX - bb.left - canvas.width/2;
-    currMousePos.y = ev.clientY - bb.top - canvas.height/2;
+    currMousePos.x = ev.clientX - bb.left - cW/2;
+    currMousePos.y = ev.clientY - bb.top - cH/2;
     if (editor.drawing) editor.updateDraw();
 }
 
@@ -890,8 +904,12 @@ document.onkeyup = (ev) => {
 
 document.onfullscreenchange = () => {
     if (!document.fullscreenElement) {
-        canvas.width = 900;
-        canvas.height = 600;
+        cW = canvas.width = 900;
+        cH = canvas.height = 600;
         theaterBG.style.display = "none";
     }
 }
+
+const coinsLastSaved = cookie.get("coins");
+coins = coinsLastSaved ? coinsLastSaved : 0;
+console.log(`Last saved: ${coinsLastSaved}`);
