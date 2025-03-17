@@ -346,9 +346,8 @@ class Zone {
     }
     
     destroy() {
-        // Zone.zones.splice(Zone.zones.indexOf(this), 1);
-        Zone.zones = Zone.zones.filter(o => !o.toBeDestroyed);
         this.toBeDestroyed = true;
+        Zone.zones = Zone.zones.filter(o => !o.toBeDestroyed);
     }
 
     checkFor(obj) {
@@ -397,8 +396,8 @@ class Point {
     }
 
     destroy() {
-        Point.instances = Point.instances.filter(o => !o.toBeDestroyed);
         this.toBeDestroyed = true;
+        Point.instances = Point.instances.filter(o => !o.toBeDestroyed);
     }
 }
 
@@ -424,8 +423,8 @@ class Dialog {
     }
 
     destroy() {
-        Dialog.instances = Dialog.instances.filter(o => !o.toBeDestroyed);
         this.toBeDestroyed = true;
+        Dialog.instances = Dialog.instances.filter(o => !o.toBeDestroyed);
     }
 }
 
@@ -450,8 +449,8 @@ class Platform {
     }
 
     destroy() {
-        Platform.instances = Platform.instances.filter(o => !o.toBeDestroyed);
         this.toBeDestroyed = true;
+        Platform.instances = Platform.instances.filter(o => !o.toBeDestroyed);
     }
 }
 
@@ -475,8 +474,8 @@ class Checkpoint {
     }
 
     destroy() {
-        Checkpoint.instances = Checkpoint.instances.filter(o => !o.toBeDestroyed);
         this.toBeDestroyed = true;
+        Checkpoint.instances = Checkpoint.instances.filter(o => !o.toBeDestroyed);
     }
 }
 
@@ -502,8 +501,8 @@ class Bouncepad {
     }
 
     destroy() {
-        Bouncepad.instances = Bouncepad.instances.filter(o => !o.toBeDestroyed);
         this.toBeDestroyed = true;
+        Bouncepad.instances = Bouncepad.instances.filter(o => !o.toBeDestroyed);
     }
 }
 
@@ -698,7 +697,7 @@ function draw() {
     //     ctx.fillStyle = zone.color;
     //     ctx.fillRect(zone.position.x + cameraOffset.x, zone.position.y + cameraOffset.y, zone.size.x, zone.size.y);
     // }
-
+    
     // if (editor.editing)
     drawGraph();
 
