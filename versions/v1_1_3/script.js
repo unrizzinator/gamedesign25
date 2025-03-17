@@ -750,6 +750,7 @@ function draw() {
         ctx.fillStyle = "#0008";
         ctx.fillRect(40, 40, 200, 150);
         ctx.fillStyle = "white";
+        ctx.font = "18px code";
         ctx.fillText(`Vel x: ${round(player.velocity.x, 2)}`, 50, 68);
         ctx.fillText(`Vel y: ${round(player.velocity.y, 2)}`, 50, 104);
         ctx.fillText(`Pos x: ${round(player.position.x, 2)}`, 50, 140);
