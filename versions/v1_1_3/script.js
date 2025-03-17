@@ -20,7 +20,7 @@ COIN_128.src = "../../src/img/Coin128x128.png";
 
 const cookie = {
     set(name, value) {
-        document.cookie = `${name}=${value}; expires="Fri, 01 Jan 2027 00:00:00 GMT; path=/"`;
+        document.cookie = `${name}=${(value).toString()}; expires="Fri, 01 Jan 2027 00:00:00 GMT;"`;
     },
     get(name) {
         console.log(`Requesting ${name}`);
@@ -163,6 +163,8 @@ var coins = 0;
 var score = 0;
 var nextID = 0;
 var cameraSubject = null;
+var dashLineSpan = 200;
+var dashGuideScale = 1;
 
 function goFullscreen() {
     if (!document.fullscreenElement) gameContainer.requestFullscreen();
@@ -331,9 +333,12 @@ class Player {
         if (this.stamina.value < DASH_STAMINA_COST || this.isDashing || this.velocity.x === 0) return;
         this.isDashing = true;
         this.stamina.value -= DASH_STAMINA_COST;
-        this.velocity.x *= 5;
+        this.velocity.x = this.velocity.x < 0 ? -20 : 20;
         this.velocity.clampX(-25, 25);
-        setTimeout(() => {this.isDashing = false}, 200);
+        dashGuideScale = 0;
+        setTimeout(() => {
+            this.isDashing = false;
+        }, 200);
     }
 
     setSpawnpoint(v) {
@@ -715,6 +720,16 @@ function draw() {
     ctx.font = "200px code";
     ctx.fillText(`${Math.round(score)}`, 50, 200);
 
+    if (!editor.editing) {
+        ctx.fillStyle = "white";
+        ctx.fillRect(player.position.x + cameraOffset.x - (dashLineSpan * dashGuideScale - 10), player.position.y + cameraOffset.y, 2, 20);
+        ctx.fillRect(player.position.x + cameraOffset.x + (dashLineSpan * dashGuideScale + 10), player.position.y + cameraOffset.y, 2, 20);
+        ctx.fillStyle = "#fff4";
+        for (let i = 0; i < 9; i++) {
+            ctx.fillRect(player.position.x + cameraOffset.x - (dashLineSpan * dashGuideScale - 10) + (((dashLineSpan * dashGuideScale * 2)/8)*i), player.position.y + cameraOffset.y + 5, 1, 10);
+        }
+    }
+
     // if (editor.editing)
     drawGraph();
 
@@ -732,7 +747,7 @@ function draw() {
         } else if (o instanceof Zone) {
             ctx.fillStyle = o.color;
             ctx.fillRect(o.position.x + cameraOffset.x, o.position.y + cameraOffset.y, o.size.x, o.size.y); 
-        }
+        }   
     }
 
     let playerSizeSquashX = Math.max(0, player.velocity.y);
@@ -804,8 +819,8 @@ function loop(t) {
     lastDeltaTime = t;
 
     score = Math.floor(Math.abs(player.position.y + 20) / 10);
-    if (score > 25 && score > currHighScore) {
-        coins += Math.floor(score - currHighScore);
+    if (score > 25 && score - currHighScore) {
+        coins += score - currHighScore;
         cookie.set("coins", coins);
         currHighScore = score;
     }
@@ -817,6 +832,7 @@ function loop(t) {
         if (!cameraSubject) cameraSubject = player;
         player.stamina.value += STAMINA_RELOAD_SPEED;
         player.stamina.value = clamp(player.stamina.value, player.stamina.min, player.stamina.max);
+        if (player.stamina.value >= DASH_STAMINA_COST) dashGuideScale = 1;
         var targetCameraOffset = new Vector(
             -(cameraSubject.position.x + cameraSubject.size.x / 2) + cW / 2,
             -(cameraSubject.position.y + cameraSubject.size.y / 2) + cH / 2);
@@ -911,5 +927,5 @@ document.onfullscreenchange = () => {
 }
 
 const coinsLastSaved = cookie.get("coins");
-coins = coinsLastSaved ? coinsLastSaved : 0;
+coins = coinsLastSaved ? Number.parseInt(coinsLastSaved) : 0;
 console.log(`Last saved: ${coinsLastSaved}`);
