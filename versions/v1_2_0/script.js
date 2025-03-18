@@ -2,6 +2,9 @@
 // 1. Saving/Loading stats (~line 204)
 // 2. Stats effecting values such as stamina
 
+// Notes for the future:
+// 1. Separate script into multiple files for easier analyzing
+
 const theaterBG = document.querySelector('#tbg');
 const gameContainer = document.querySelector('.game-container');
 
