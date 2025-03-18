@@ -1,3 +1,7 @@
+// Things that are broken/need fixing currently:
+// 1. Saving/Loading stats (~line 204)
+// 2. Stats effecting values such as stamina
+
 const theaterBG = document.querySelector('#tbg');
 const gameContainer = document.querySelector('.game-container');
 
@@ -9,6 +13,7 @@ const healthStat = ui.querySelector('#healthStat');
 const healthStatDisplay = healthStat.querySelector('#healthStatDisplay');
 const staminaStat = ui.querySelector('#staminaStat');
 const staminaStatDisplay = staminaStat.querySelector('#staminaStatDisplay');
+const upgradesList = document.querySelector('#upgrades');
 
 const canvas = document.querySelector('canvas');
 const ctx = canvas.getContext('2d');
@@ -194,12 +199,77 @@ var nextID = 0;
 var cameraSubject = null;
 var dashLineSpan = 200;
 var dashGuideScale = 1;
+var zoneCoinMultiplier = 1;
 
-var stats = {
-    staminaLevel: 0,
-    staminaRegenSpeed: 0.5,
-    coinMultiplier: 1
+let _s3b98598 = cookie.get("upgrades");
+var stats = _s3b98598.length <= 2 ? JSON.parse(_s3b98598) : {
+    stamina: {
+        name: "Stamina",
+        level: {
+            max: 5,
+            current: 0
+        },
+        cost: {
+            base: 5000,
+            scale: 1.75,
+        }
+    },
+    staminaRegenSpeed: {
+        name: "Stamina Regeneration Speed",
+        level: {
+            max: 5,
+            current: 0
+        },
+        cost: {
+            base: 5000,
+            scale: 1.8,
+        }
+    },
+    coinMultiplier: {
+        name: "Coin Multiplier",
+        level: {
+            max: 5,
+            current: 0
+        },
+        cost: {
+            base: 10000,
+            scale: 1.85,
+        }
+    },
+};
+
+function requestStatUpgrade(el, stat) {
+    if (!Object.keys(stats).includes(stat)) {
+        Error(`Stat "${stat}" not found.`);
+        return;
+    }
+    let s = stats[stat];
+    let compoundedCost = s.cost.base * Math.pow(s.cost.scale, s.level.current)
+    if (coins >= compoundedCost && s.level.current < s.level.max) {
+        coins -= compoundedCost;
+        s.level.current++;
+    }
+
+    cookie.set("upgrades", JSON.stringify(stats));
+
+    let upgradeProgressElement = el.parentNode.querySelector('.upgradeLevel');
+    upgradeProgressElement.style.width = `${(s.level.current/s.level.max) * 100}%`;
 }
+
+function fillUI() {
+    for (let i = 0; i < Object.keys(stats).length; i++) {
+        let k = Object.keys(stats)[i];
+        let v = stats[k];
+        upgradesList.innerHTML += `
+        <div class="upgrade">
+            <div class="name">${v.name}</div>
+            <div class="upgradeLevelContainer">
+                <div class="upgradeLevel" style="width: ${(v.level.current/v.level.max) * 100}%;"></div>
+            </div>
+            <button class="coolBtn" onclick="requestStatUpgrade(this, '${k}')">Upgrade</button>
+        </div>`;
+    }
+} fillUI();
 
 function goFullscreen() {
     if (!document.fullscreenElement) gameContainer.requestFullscreen();
@@ -605,10 +675,10 @@ class Bouncepad {
 
 //identifier, position, size, visible, color
 const difficultyZones = [
-    new Zone("Easy", new Vector(-1000, -5000), new Vector(2000, 5000), {coinMultiplier: 1, platformWidth: 100, platformSpeed: {min: -0.5, max: 0.5}}, true, "#0f02"),
-    new Zone("Medium", new Vector(-1000, -15000), new Vector(2000, 10000), {coinMultiplier: 2, platformWidth: 70, platformSpeed: {min: -0.75, max: 0.75}}, true, "#ff02"),
-    new Zone("Hard", new Vector(-1000, -30000), new Vector(2000, 15000), {coinMultiplier: 4, platformWidth: 60, platformSpeed: {min: -0.75, max: 0.75}}, true, "#f002"),
-    new Zone("Insanity", new Vector(-1000, -50000), new Vector(2000, 20000), {coinMultiplier: 6, platformWidth: 50, platformSpeed: {min: -0.9, max: 0.9}}, true, "#80f2")
+    new Zone("Easy", new Vector(-1000, -5000), new Vector(2000, 5000), {coinMultiplier: 1, platformWidth: 100, platformSpeed: {min: -0.5, max: 0.5}}, false, "#0f02"),
+    new Zone("Medium", new Vector(-1000, -15000), new Vector(2000, 10000), {coinMultiplier: 2, platformWidth: 70, platformSpeed: {min: -0.75, max: 0.75}}, false, "#ff02"),
+    new Zone("Hard", new Vector(-1000, -30000), new Vector(2000, 15000), {coinMultiplier: 4, platformWidth: 60, platformSpeed: {min: -0.75, max: 0.75}}, false, "#f002"),
+    new Zone("Insanity", new Vector(-1000, -50000), new Vector(2000, 20000), {coinMultiplier: 6, platformWidth: 50, platformSpeed: {min: -0.9, max: 0.9}}, false, "#80f2")
 ];
 
 function updateSetting(s, v) {
@@ -786,7 +856,7 @@ function updatePhysics(deltaTime) {
         let zone = Zone.zones[i];
         if (zone.checkFor(player)) {
             if (zone.attributes.coinMultiplier) {
-                stats.coinMultiplier = zone.attributes.coinMultiplier;
+                zoneCoinMultiplier = zone.attributes.coinMultiplier;
             }
         }
     }
@@ -841,7 +911,8 @@ function draw() {
     // if (editor.editing)
     drawGraph();
 
-    for (let o of objects) {
+    for (let i = objects.length - 1; i > 0; i--) {
+        let o = objects[i];
         if (o instanceof Platform) {
             ctx.fillStyle = o.color;
             ctx.fillRect(o.position.x + cameraOffset.x, o.position.y + cameraOffset.y, o.size.x, o.size.y);
@@ -853,8 +924,10 @@ function draw() {
             ctx.font = "24px Arial";
             ctx.fillText(o.text, o.position.x + cameraOffset.x, o.position.y + cameraOffset.y);
         } else if (o instanceof Zone) {
-            ctx.fillStyle = o.color;
-            ctx.fillRect(o.position.x + cameraOffset.x, o.position.y + cameraOffset.y, o.size.x, o.size.y); 
+            if (o.visible) {
+                ctx.fillStyle = o.color;
+                ctx.fillRect(o.position.x + cameraOffset.x, o.position.y + cameraOffset.y, o.size.x, o.size.y); 
+            }
         }   
     }
 
@@ -921,7 +994,7 @@ function loop(t) {
 
     score = Math.floor(Math.abs(player.position.y + 20) / 10);
     if (score > 25 && score - currHighScore > 0) {
-        coins += (score - currHighScore) * stats.coinMultiplier;
+        coins += (score - currHighScore) * zoneCoinMultiplier;
         cookie.set("coins", coins);
         cookie.set("highscore", score);
         currHighScore = score;
@@ -935,7 +1008,7 @@ function loop(t) {
     if (!paused && deltaTime) {
         if (!player) return;
         if (!cameraSubject) cameraSubject = player;
-        player.stamina.value += stats.staminaRegenSpeed * deltaTime;
+        player.stamina.value += 1 * Math.max(1, (stats.staminaRegenSpeed.level.current)) * deltaTime;
         player.stamina.value = clamp(player.stamina.value, player.stamina.min, player.stamina.max);
         dashGuideScale = player.stamina.value/player.stamina.max;
         if (player.stamina.value >= DASH_STAMINA_COST) dashGuideScale = 1;
@@ -1052,7 +1125,7 @@ document.onkeydown = (ev) => {
             pause();
             break;
         case settings.controls.gravity:
-            toggleGravity();
+            // toggleGravity();
             break;
         case settings.controls.editor:
             toggleEditor();
@@ -1082,5 +1155,5 @@ document.onfullscreenchange = () => {
 }
 
 const coinsLastSaved = cookie.get("coins");
-coins = coinsLastSaved ? Number.parseInt(coinsLastSaved) : 0;
+coins = coinsLastSaved ? Number.parseFloat(coinsLastSaved) : 0;
 coinStatDisplay.textContent = coins.toLocaleString();
