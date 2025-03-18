@@ -1,0 +1,424 @@
+@font-face {
+    font-family: 'bungee';
+    src: url(../../src/fonts/Bungee/Bungee-Regular.ttf);
+}
+
+@font-face {
+    font-family: 'code';
+    src: url(../../src/fonts/Fira_Code/FiraCode-VariableFont_wght.ttf);
+}
+
+* {
+    font-family: 'bungee';
+}
+
+@keyframes rainbow-background {
+    0% {background-color: red;}
+    50% {background-color: lime;}
+    100% {background-color: blue;}
+}
+
+:root {
+    --theme-primary: #181818;
+    --theme-secondary: #262931;
+    --font-color: rgb(0, 0, 0); 
+}
+
+body {
+    background: var(--theme-primary);
+}
+
+.r {
+    animation: 50ms rainbow-background linear infinite alternate;
+}
+
+.dotted-bg {
+    background-image: linear-gradient(-45deg, #000b 5px, transparent 5px);
+    background-size: 20px 20px;
+    background-repeat: repeat;
+    background-position: 50% 50%;
+}
+
+.coolBtn {
+    position: relative;
+    background: var(--theme-secondary);
+    color: white;
+    font-family: 'bungee';
+    border: 1px solid black;
+    outline: none;
+    box-shadow: 5px 5px 0px 0px #0003;
+    width: 100px;
+    height: 40px;
+    cursor: pointer;
+    transition: 70ms;
+
+    &:hover {
+        margin-top: 3px;
+    }
+}
+
+#tbg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    background: black;
+    z-index: 1;
+}
+
+.container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: fit-content;
+    height: fit-content;
+    background: var(--theme-primary);
+    border: 1px solid black;
+    box-shadow: 5px 5px 0px 0px #0003;
+    padding: 1rem;
+    z-index: 2;
+
+    &:hover > .panel {
+        height: 4rem;
+    }
+}
+
+.container .topbar {
+    width: 100%;
+    height: 3rem;
+    color: var(--font-color);
+    font-size: 1.25rem;
+    font-family: 'bungee';
+}
+
+.topbar .fs {
+    position: absolute;
+    right: 1rem;
+    width: 2rem;
+    height: 2rem;
+    grid-column: 10;
+    border: 1px solid black;
+    outline: none;
+    background-color: rgb(0, 160, 255);
+    background-image: url(../../src/svg/fullscreen.svg);
+    background-size: 1.5rem 1.5rem;
+    background-position: center center;
+    background-repeat: no-repeat;
+    cursor: pointer;
+
+    &:hover {
+        left: unset;
+        top: unset;
+    }
+}
+
+.container .game-container {
+    position: relative;
+    border: 1px solid black;
+    box-shadow: 3px 3px 0px 0px #0003;
+    width: auto;
+    height: auto;
+}
+
+.container #canvas {
+    position: relative;
+    background: #fafafa;
+}
+
+.game-container .ui {
+    position: absolute;
+    pointer-events: none;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 4;
+}
+
+.ui .stats {
+    position: absolute;
+    top: 1rem;
+    left: calc(100% - 1rem);
+    transform: translate(-100%, 0%);
+    width: fit-content;
+    display: flex;
+    flex-direction: column;
+    justify-content: right;
+    gap: 1rem;
+    z-index: 2;
+}
+
+.stats .stat {
+    position: relative;
+    left: 100%;
+    transform: translate(-100%, 0%);
+    min-width: 100px;
+    padding: .5rem;
+    width: fit-content;
+    max-width: 200px;
+    padding-right: 2rem;
+    height: 40px;
+    background: #000b;
+    display: flex;
+    flex-direction: row;
+}
+
+.stat.currency {
+    opacity: 0;
+    border-bottom: 5px solid #ffe647;
+}
+
+.stat.health {
+    opacity: 0;
+    border-bottom: 5px solid #ff3e3e;
+}
+
+.stat.stamina {
+    opacity: 0;
+    border-bottom: 5px solid #00cbff;
+}
+
+.stat img {
+    position: relative;
+    top: 50%;
+    left: 0;
+    transform: translate(0%, -50%);
+    width: 32px;
+    height: 32px;
+}
+
+.stat .value {
+    position: relative;
+    top: 50%;
+    left: 1rem;
+    transform: translate(0%, -50%);
+    width: fit-content;
+    height: 100%;
+    font-size: 24px;
+    color: white;
+    display: flex;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    justify-content: left;
+    align-items: center;
+}
+
+.ui .window-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #0002;
+    z-index: 1;
+}
+
+.window-container .window {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    user-select: none !important;
+    -webkit-user-drag: none !important;
+
+    &.active {
+        opacity: 1;
+        pointer-events: all;
+    }
+}
+
+/* Begin windows */
+
+.window[windowId="mainMenu"] {
+    background: #0004;
+
+    & h1 {
+        position: absolute;
+        top: 30%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 300px;
+        height: fit-content;
+        text-align: center;
+        color: white;
+    }
+
+    & button {
+        position: absolute;
+        top: 60%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 100px;
+        height: 40px;
+        background: transparent;
+        outline: 3px solid white;
+
+        &::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 100%;
+            background: black;
+            backdrop-filter: invert();
+            transition: width 100ms ease-out;
+        }
+
+        &:hover > ::after {
+            width: 100%;
+        }
+    }
+}
+
+.window[windowId="pauseMenu"] {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: .5rem; 
+}
+
+.window[windowId="shopMenu"] {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: .5rem;
+
+    & #upgrades {
+        width: fit-content;
+        height: 400px;
+        padding: 1rem;
+        background: #0008;
+        display: flex;
+        flex-direction: column;
+        gap: .5rem;
+
+        & .upgrade {
+            position: relative;
+            width: 500px;
+            height: 4rem;
+            padding: .5rem;
+            background: var(--theme-secondary);
+
+            & .name {
+                position: relative;
+                width: 100%;
+                height: 1rem;
+                top: .5rem;
+                display: flex;
+                justify-content: left;
+                align-items: center;
+                text-indent: .5rem;
+                color: #fffb;
+            }
+
+            & .upgradeLevelContainer {
+                position: relative;
+                top: calc(100% - 1rem);
+                transform: translate(0%, -100%);
+                width: calc(100% - 5.5rem);
+                height: 2rem;
+                background: var(--theme-secondary);
+                border: 1px solid black;
+
+                & .upgradeLevel {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 0%;
+                    height: 100%;
+                    background:rgb(0, 160, 255);
+                }
+            }
+
+            & button {
+                position: absolute;
+                width: 5rem;
+                height: calc(2rem + 2px);
+                left: calc(100% - .5rem);
+                top: calc(100% - .5rem);
+                transform: translate(-100%, -100%);
+            }
+        }
+    }
+}
+
+/* End windows */
+
+.game-container #gameEditor {
+    position: absolute;
+    top: 50%;
+    left: calc(100% - 1rem);
+    transform: translate(-100%, -50%);
+    width: 160px;
+    height: 540px;
+    padding: .5rem;
+    display: none;
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: auto;
+    gap: .5rem;
+    overflow: hidden;
+    background: #000d;
+    backdrop-filter: blur(10px);
+    border-radius: 8px;
+    z-index: 5;
+}
+
+#gameEditor * {
+    font-family: 'code';
+    color: white;
+}
+
+#gameEditor input {
+    width: 100%;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    outline: none;
+    border: none;
+    text-align: center;
+    background: #101010;
+    color: white;
+}
+
+#gameEditor button {
+    width: 100%;
+    height: auto;
+    background: #101010;
+    border-radius: 5px;
+    margin: 0;
+    padding: 0;
+    outline: none;
+    border: none;
+    cursor: pointer;
+    transition: filter 60ms ease-out;
+
+    &:hover {
+        filter: brightness(50%);
+    }
+}
+
+.container .panel {
+    position: relative;
+    top: 1rem;
+    width: 100%;
+    height: 0;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    transition: height 200ms ease-out;
+}
+
+.panel button {
+    width: 100%;
+    height: 4rem;
+}
