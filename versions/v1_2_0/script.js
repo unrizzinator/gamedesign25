@@ -34,11 +34,8 @@ const cookie = {
         document.cookie = `${name}=${(value).toString()}; expires="Fri, 01 Jan 2027 00:00:00 GMT;"`;
     },
     get(name) {
-        console.log(`Requesting ${name}`);
         const cookies = document.cookie.split("; ");
-        console.log(cookies);
         const cookie = cookies.find(r => r.startsWith(name + "="))?.split("=")[1] || null;
-        console.log(`Found ${cookie}`);
         return cookie;
     },
     remove(name) {
@@ -193,13 +190,12 @@ var keyStates = {};
 var currHighScore = 0;
 var coins = 0;
 var score = 0;
-var lavaLevel = 0;
 var nextID = 0;
 var cameraSubject = null;
 var dashLineSpan = 200;
 var dashGuideScale = 1;
 
-var powerStats = {
+var stats = {
     staminaLevel: 0,
     staminaRegenSpeed: 0.5,
     coinMultiplier: 1
@@ -361,7 +357,7 @@ class Player {
         this.isDashing = false;
         this.color = color ? color : "#f00";
         this.size = new Vector(20, 20);
-        this.offset = new Vector(5, 20);
+        this.zone = null;
         this.zIndex = 100;
         nextID++;
     }
@@ -395,14 +391,16 @@ class Zone {
     static zones = [];
     entities = [];
 
-    constructor(identifier, position, size, visible, color) {
+    constructor(identifier, position, size, attributes, visible, color) {
         this.identifier = identifier;
         this.position = position;
         this.size = size;
+        this.attributes = attributes ? attributes : {};
         this.visible = visible ? visible : false;
         this.color = color ? color : "#f002";
         this.zIndex = 99;
         Zone.zones.push(this);
+        objects.push(this);
     }
 
     getEntities() {
@@ -605,6 +603,14 @@ class Bouncepad {
     }
 }
 
+//identifier, position, size, visible, color
+const difficultyZones = [
+    new Zone("Easy", new Vector(-1000, -5000), new Vector(2000, 5000), {coinMultiplier: 1, platformWidth: 100, platformSpeed: {min: -0.5, max: 0.5}}, true, "#0f02"),
+    new Zone("Medium", new Vector(-1000, -15000), new Vector(2000, 10000), {coinMultiplier: 2, platformWidth: 70, platformSpeed: {min: -0.75, max: 0.75}}, true, "#ff02"),
+    new Zone("Hard", new Vector(-1000, -30000), new Vector(2000, 15000), {coinMultiplier: 4, platformWidth: 60, platformSpeed: {min: -0.75, max: 0.75}}, true, "#f002"),
+    new Zone("Insanity", new Vector(-1000, -50000), new Vector(2000, 20000), {coinMultiplier: 6, platformWidth: 50, platformSpeed: {min: -0.9, max: 0.9}}, true, "#80f2")
+];
+
 function updateSetting(s, v) {
     if (!v) return;
     if (settings[s]) {
@@ -657,9 +663,6 @@ function cleanup() {
 function reset() {
     cleanup();
     setup();
-
-    // const _tmpPlayerSize = new Vector().addVector(player.size);
-    // player = new Player(spawnpoint.add(-(_tmpPlayerSize.x/2), -_tmpPlayerSize.y - 20), "#fff");
     cameraSubject = player;
 }
 
@@ -668,7 +671,7 @@ function pause() {
 }
 
 function setup() {
-    player = new Player(spawnpoint.add(-10, -40), "#fff");
+    player = new Player(spawnpoint.add(-10, -20), "#fff");
     cameraSubject = player;
     
     // Floor
@@ -679,8 +682,13 @@ function setup() {
     new Platform(new Vector(2000, -Number.MAX_SAFE_INTEGER/4), new Vector(100, Number.MAX_SAFE_INTEGER/2), "#fff0");
 
     // Falling platforms
-    for (let i = 1; i <= 5000; i++) {
-        new Platform(new Vector((Math.random() * 800) - 400, -40 - (i * 80)), new Vector(100, 10), "#fff", new Vector((Math.random() * 1) - 0.5));
+    for (let i = 0; i < difficultyZones.length; i++) {
+        const zone = difficultyZones[i];
+        for (let i = 1; i <= Math.round(zone.size.y) / 80; i++) {
+            new Platform(new Vector((Math.random() * 800) - 400, zone.position.y + zone.size.y - (i * 80)), 
+            new Vector(zone.attributes.platformWidth, 10), "#fff", 
+            new Vector((Math.random() * (zone.attributes.platformSpeed.max - zone.attributes.platformSpeed.min)) + zone.attributes.platformSpeed.min));
+        }
     }
 
     // new Checkpoint(new Vector(400, -5000), new Vector(100, 10));
@@ -773,6 +781,15 @@ function updatePhysics(deltaTime) {
     player.velocity = player.velocity.clamp((player.isDashing ? -50 : -10), (player.isDashing ? 50 : 10), -15, 10);
     player.velocity = player.velocity.mul(1 - player.friction * deltaTime, 1);
     player.position = player.position.add(player.velocity.x * deltaTime, player.velocity.y * deltaTime);
+
+    for (let i = 0; i < Zone.zones.length; i++) {
+        let zone = Zone.zones[i];
+        if (zone.checkFor(player)) {
+            if (zone.attributes.coinMultiplier) {
+                stats.coinMultiplier = zone.attributes.coinMultiplier;
+            }
+        }
+    }
 
     for (let p of Platform.instances) {
         p.position = p.position.addVector(p.velocity);
@@ -904,8 +921,9 @@ function loop(t) {
 
     score = Math.floor(Math.abs(player.position.y + 20) / 10);
     if (score > 25 && score - currHighScore > 0) {
-        coins += score - currHighScore;
+        coins += (score - currHighScore) * stats.coinMultiplier;
         cookie.set("coins", coins);
+        cookie.set("highscore", score);
         currHighScore = score;
     }
     coinStatDisplay.textContent = coins.toLocaleString();
@@ -917,7 +935,7 @@ function loop(t) {
     if (!paused && deltaTime) {
         if (!player) return;
         if (!cameraSubject) cameraSubject = player;
-        player.stamina.value += powerStats.staminaRegenSpeed * deltaTime;
+        player.stamina.value += stats.staminaRegenSpeed * deltaTime;
         player.stamina.value = clamp(player.stamina.value, player.stamina.min, player.stamina.max);
         dashGuideScale = player.stamina.value/player.stamina.max;
         if (player.stamina.value >= DASH_STAMINA_COST) dashGuideScale = 1;
