@@ -294,9 +294,6 @@ function setup() {
         }
     }
 
-    // new Checkpoint(new Vector(400, -5000), new Vector(100, 10));
-    // new Checkpoint(new Vector(-500, -10000), new Vector(100, 10));
-
     objects = objects.sort((a, b) => a.zIndex - b.zIndex);
 
     editor.editing = false;
@@ -306,4 +303,4 @@ function setup() {
 setTimeout(() => {
     setup();
     loop();
-}, 10);
+}, 12);

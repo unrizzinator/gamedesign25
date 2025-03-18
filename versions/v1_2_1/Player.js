@@ -1,3 +1,62 @@
+var stats = {};
+
+setTimeout(() => {
+    let _s3b98598 = cookie.get("upgrades");
+    stats = _s3b98598 != null ? JSON.parse(_s3b98598) : {
+        stamina: {
+            name: "Stamina",
+            level: {
+                max: 5,
+                current: 0
+            },
+            cost: {
+                base: 5000,
+                scale: 1.75,
+            }
+        },
+        staminaRegenSpeed: {
+            name: "Stamina Regeneration Speed",
+            level: {
+                max: 5,
+                current: 0
+            },
+            cost: {
+                base: 5000,
+                scale: 1.8,
+            }
+        },
+        coinMultiplier: {
+            name: "Coin Multiplier",
+            level: {
+                max: 5,
+                current: 0
+            },
+            cost: {
+                base: 10000,
+                scale: 1.85,
+            }
+        },
+    }
+}, 10);
+
+function requestStatUpgrade(el, stat) {
+    if (!Object.keys(stats).includes(stat)) {
+        Error(`Stat "${stat}" not found.`);
+        return;
+    }
+    let s = stats[stat];
+    let compoundedCost = s.cost.base * Math.pow(s.cost.scale, s.level.current)
+    if (coins >= compoundedCost && s.level.current < s.level.max) {
+        coins -= compoundedCost;
+        s.level.current++;
+    }
+
+    cookie.set("upgrades", JSON.stringify(stats));
+
+    let upgradeProgressElement = el.parentNode.querySelector('.upgradeLevel');
+    upgradeProgressElement.style.width = `${(s.level.current/s.level.max) * 100}%`;
+}
+
 class Player {
     constructor(position, color) {
         this.id = nextID;
