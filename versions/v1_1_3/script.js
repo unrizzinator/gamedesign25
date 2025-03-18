@@ -54,6 +54,7 @@ var settings = {
         up:      "w",
         jump:    " ",
         dash:    "shift",
+        menu:    "m",
         reset:   "r",
         pause:   "p",
         gravity: "g",
@@ -663,10 +664,7 @@ function reset() {
 }
 
 function pause() {
-    if (!hasStarted) return;
     paused = !paused;
-    if (paused) openWindow("pauseMenu");
-    else exitWindow();
 }
 
 function setup() {
@@ -961,6 +959,11 @@ function openWindow(windowId) {
     staminaStat.style.opacity = 0;
 }
 
+function toggleMenu() {
+    if (gameFocused) openWindow("pauseMenu");
+    else exitWindow();
+}
+
 function start() {
     exitWindow();
     hasStarted = true;
@@ -1008,7 +1011,7 @@ document.onmouseup = () => {
 }
 
 document.onkeydown = (ev) => {
-    if (!gameFocused) return;
+    if (ev.key != settings.controls.menu && !gameFocused) return;
     if (ev.key == "Tab" || ev.key == " " || ev.key == "Enter") ev.preventDefault();
     keyStates[ev.key.toLowerCase()] = true;
     switch (ev.key.toLowerCase()) {
@@ -1020,6 +1023,9 @@ document.onkeydown = (ev) => {
             break;
         case settings.controls.dash:
             player.dash();
+            break;
+        case settings.controls.menu:
+            toggleMenu();
             break;
         case settings.controls.reset:
             reset();
