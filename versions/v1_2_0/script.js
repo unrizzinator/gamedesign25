@@ -205,7 +205,7 @@ var dashGuideScale = 1;
 var zoneCoinMultiplier = 1;
 
 let _s3b98598 = cookie.get("upgrades");
-var stats = _s3b98598 ? JSON.parse(_s3b98598) : {
+var stats = _s3b98598 != null ? JSON.parse(_s3b98598) : {
     stamina: {
         name: "Stamina",
         level: {
