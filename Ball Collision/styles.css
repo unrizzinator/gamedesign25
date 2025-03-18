@@ -1,0 +1,19 @@
+body {
+    background-color: #101010;
+}
+
+canvas {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: auto;
+    height: auto;
+    border-radius: 8px;
+    background: #202020;
+    border: 2px solid #101010;
+    box-shadow: 0px 0px 0px 3px #fff,
+                0px 0px 24px 6px #fff4,
+                inset 0px 0px 100px 0px #fff2,
+                inset 0px 0px 20px 0px #000f;
+}
