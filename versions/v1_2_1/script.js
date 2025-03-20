@@ -1,5 +1,6 @@
 // Known goals for the future:
 // 1. Add a pacer system such as rising lava
+// 2. Revert Vector class back
 
 const theaterBG = document.querySelector('#tbg');
 const gameContainer = document.querySelector('.game-container');
