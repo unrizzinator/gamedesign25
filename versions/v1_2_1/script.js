@@ -273,8 +273,8 @@ function fillUI() {
 
 function goFullscreen() {
     if (!document.fullscreenElement) gameContainer.requestFullscreen();
-    cW = canvas.width = window.outerWidth;
-    cH = canvas.height = window.outerHeight;
+    cW = canvas.width = window.screen.width;
+    cH = canvas.height = window.screen.height;
     theaterBG.style.display = "block";
 }
 
