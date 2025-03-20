@@ -1002,7 +1002,7 @@ function loop(t) {
         cookie.set("highscore", score);
         currHighScore = score;
     }
-    coinStatDisplay.textContent = coins.toLocaleString();
+    coinStatDisplay.textContent = round(coins,2).toLocaleString();
     healthStatDisplay.textContent = Math.round(player.health.value);
     staminaStatDisplay.textContent = Math.round(player.stamina.value);
 
