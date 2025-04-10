@@ -31,9 +31,6 @@ let cH = canvas.height = GAME_HEIGHT;
 
 const UIWindows = document.querySelectorAll('.window');
 
-const COIN_128 = new Image();
-COIN_128.src = "../../src/img/Coin128x128.png";
-
 const cookie = {
     set(name, value) {
         document.cookie = `${name}=${(value).toString()}; expires="Fri, 01 Jan 2027 00:00:00 GMT;"`;
