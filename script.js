@@ -18,10 +18,14 @@ const versions = [
     "1.2.1",
 ]
 
+const versions2 = [
+    "1.0.0"
+]
+
 function fillList() {
-    versions.forEach(version => {
+    versions2.forEach(version => {
         const newLink = document.createElement('a');
-        newLink.href = `./versions/v${version.replaceAll(".", "_")}/index.html`;
+        newLink.href = `./versions2/v${version.replaceAll(".", "_")}/index.html`;
         newLink.innerHTML = `<button class="version">v${version}</button>`;
         list.append(newLink);
     });

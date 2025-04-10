@@ -65,7 +65,8 @@ var settings = {
         delete:  "delete"
     },
     gravity: true,
-    debug: false
+    debug: false,
+    moonGravity: false
 };
 
 var editor = {
@@ -201,8 +202,7 @@ var dashLineSpan = 200;
 var dashGuideScale = 1;
 var zoneCoinMultiplier = 1;
 
-let _s3b98598 = cookie.get("upgrades");
-var stats = _s3b98598 != null ? JSON.parse(_s3b98598) : {
+var stats = {
     stamina: {
         name: "Stamina",
         level: {
@@ -225,6 +225,17 @@ var stats = _s3b98598 != null ? JSON.parse(_s3b98598) : {
             scale: 1.8,
         }
     },
+    jumpHeight: {
+        name: "Jump Height",
+        level: {
+            max: 3,
+            current: 0
+        },
+        cost: {
+            base: 3000,
+            scale: 1.4
+        }
+    },
     coinMultiplier: {
         name: "Coin Multiplier",
         level: {
@@ -238,6 +249,14 @@ var stats = _s3b98598 != null ? JSON.parse(_s3b98598) : {
     },
 };
 
+let upgradeData = cookie.get("upgrades");
+if (upgradeData) {
+    for (let i = 0; i < Object.keys(stats).length; i++) {
+        let s = Object.keys(stats)[i];
+        stats[s].level.current = upgradeData[s] ? upgradeData[s].level : 0;
+    }
+}
+
 function requestStatUpgrade(el, stat) {
     if (!Object.keys(stats).includes(stat)) {
         Error(`Stat "${stat}" not found.`);
@@ -250,7 +269,13 @@ function requestStatUpgrade(el, stat) {
         s.level.current++;
     }
 
-    cookie.set("upgrades", JSON.stringify(stats));
+    let upgradeData = {};
+    for (let i = 0; i < Object.keys(stats).length; i++) {
+        let s = Object.keys(stats)[i];
+        upgradeData[s] = {};
+        s.level = stats[s].level.current;
+    }
+    cookie.set("upgrades", JSON.stringify(upgradeData));
 
     let upgradeProgressElement = el.parentNode.querySelector('.upgradeLevel');
     upgradeProgressElement.style.width = `${(s.level.current/s.level.max) * 100}%`;
@@ -262,14 +287,14 @@ function fillUI() {
         let v = stats[k];
         upgradesList.innerHTML += `
         <div class="upgrade">
-            <div class="name">${v.name}</div>
+            <div class="name">${v.name} (${Math.floor(v.cost.base + Math.pow(v.cost.scale, v.level.current))})</div>
             <div class="upgradeLevelContainer">
                 <div class="upgradeLevel" style="width: ${(v.level.current/v.level.max) * 100}%;"></div>
             </div>
             <button class="coolBtn" onclick="requestStatUpgrade(this, '${k}')">Upgrade</button>
         </div>`;
     }
-} fillUI();
+} setTimeout(fillUI, 200);
 
 function goFullscreen() {
     if (!document.fullscreenElement) gameContainer.requestFullscreen();
@@ -675,10 +700,10 @@ class Bouncepad {
 
 //identifier, position, size, visible, color
 const difficultyZones = [
-    new Zone("Easy", new Vector(-1000, -5000), new Vector(2000, 5000), {coinMultiplier: 1, platformWidth: 100, platformSpeed: {min: -0.5, max: 0.5}}, false, "#0f02"),
-    new Zone("Medium", new Vector(-1000, -15000), new Vector(2000, 10000), {coinMultiplier: 2, platformWidth: 70, platformSpeed: {min: -0.75, max: 0.75}}, false, "#ff02"),
-    new Zone("Hard", new Vector(-1000, -30000), new Vector(2000, 15000), {coinMultiplier: 4, platformWidth: 60, platformSpeed: {min: -0.75, max: 0.75}}, false, "#f002"),
-    new Zone("Insanity", new Vector(-1000, -50000), new Vector(2000, 20000), {coinMultiplier: 6, platformWidth: 50, platformSpeed: {min: -0.9, max: 0.9}}, false, "#80f2")
+    new Zone("Easy", new Vector(-1000, -5000), new Vector(2000, 5000), {coinMultiplier: 1, platformWidth: 100, platformSpeed: {min: -0.5, max: 0.5}}, true, "#0f02"),
+    new Zone("Medium", new Vector(-1000, -15000), new Vector(2000, 10000), {coinMultiplier: 2, platformWidth: 70, platformSpeed: {min: -0.75, max: 0.75}}, true, "#ff02"),
+    new Zone("Hard", new Vector(-1000, -30000), new Vector(2000, 15000), {coinMultiplier: 4, platformWidth: 60, platformSpeed: {min: -0.75, max: 0.75}}, true, "#f002"),
+    new Zone("Insanity", new Vector(-1000, -50000), new Vector(2000, 20000), {coinMultiplier: 6, platformWidth: 40, platformSpeed: {min: -1.2, max: 1.2}}, true, "#80f2")
 ];
 
 function updateSetting(s, v) {
@@ -750,6 +775,8 @@ function setup() {
     // Walls
     new Platform(new Vector(-2000 - 100, -Number.MAX_SAFE_INTEGER/4), new Vector(100, Number.MAX_SAFE_INTEGER/2), "#fff0");
     new Platform(new Vector(2000, -Number.MAX_SAFE_INTEGER/4), new Vector(100, Number.MAX_SAFE_INTEGER/2), "#fff0");
+    
+    new Platform(new Vector(-2000, -100), new Vector(10, 100), "#08f", new Vector(1), 5);
 
     // Falling platforms
     for (let i = 0; i < difficultyZones.length; i++) {
@@ -844,11 +871,11 @@ function checkCollision(player, rect) {
 
 function updatePhysics(deltaTime) {
     if (player.position.y + player.velocity.y > 2000) reset();
-    if (settings.gravity) player.velocity = player.velocity.add(0, GRAVITY_STRENGTH * GRAVITY_SPEED_MULTIPLIER * deltaTime);
+    if (settings.gravity) player.velocity = player.velocity.add(0, GRAVITY_STRENGTH * GRAVITY_SPEED_MULTIPLIER * deltaTime * (settings.moonGravity ? 0.166 : 1));
     if (keyStates[settings.controls.left]) player.velocity = player.velocity.add(-player.acceleration * (player.isGrounded?1:AIR_STRAFING_SPEED_MULTIPLIER) * deltaTime, 0);
     if (keyStates[settings.controls.right]) player.velocity = player.velocity.add(player.acceleration * (player.isGrounded?1:AIR_STRAFING_SPEED_MULTIPLIER) * deltaTime, 0);
     if (Math.abs(player.velocity.x) < 0.1) player.velocity.x = 0;
-    player.velocity = player.velocity.clamp((player.isDashing ? -50 : -10), (player.isDashing ? 50 : 10), -15, 10);
+    player.velocity = player.velocity.clamp((player.isDashing ? -50 : -10), (player.isDashing ? 50 : 10), -20, 10);
     player.velocity = player.velocity.mul(1 - player.friction * deltaTime, 1);
     player.position = player.position.add(player.velocity.x * deltaTime, player.velocity.y * deltaTime);
 

@@ -1,0 +1,25 @@
+{
+  "name": "a-game",
+  "version": "1.0.0",
+  "description": "A game",
+  "main": "./versions2/v1_0_0/server/server.js",
+  "scripts": {
+    "debug": "nodemon ./version2/v1_0_0/server/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/unrizzinator/gamedesign25.git"
+  },
+  "keywords": [],
+  "author": "Shane",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/unrizzinator/gamedesign25/issues"
+  },
+  "homepage": "https://github.com/unrizzinator/gamedesign25#readme",
+  "dependencies": {
+    "uuid": "^11.1.0",
+    "ws": "^8.18.1"
+  }
+}
