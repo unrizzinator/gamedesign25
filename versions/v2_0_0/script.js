@@ -579,10 +579,10 @@ class Bouncepad {
 
 //identifier, position, size, visible, color
 const difficultyZones = [
-    new Zone("Easy", new Vector(-1000, -5000), new Vector(2000, 5000), {coinMultiplier: 1, platformWidth: 100, platformSpeed: {min: -0.5, max: 0.5}}, false, "#0f02"),
-    new Zone("Medium", new Vector(-1000, -15000), new Vector(2000, 10000), {coinMultiplier: 2, platformWidth: 70, platformSpeed: {min: -0.75, max: 0.75}}, false, "#ff02"),
-    new Zone("Hard", new Vector(-1000, -30000), new Vector(2000, 15000), {coinMultiplier: 4, platformWidth: 60, platformSpeed: {min: -0.75, max: 0.75}}, false, "#f002"),
-    new Zone("Insanity", new Vector(-1000, -50000), new Vector(2000, 20000), {coinMultiplier: 6, platformWidth: 40, platformSpeed: {min: -1.2, max: 1.2}}, false, "#80f2")
+    new Zone("Easy", new Vector(-Number.MAX_SAFE_INTEGER/4, -5000), new Vector(Number.MAX_SAFE_INTEGER/2, 5000), {coinMultiplier: 1, platformWidth: 100, platformSpeed: {min: -0.5, max: 0.5}}, true, "#0f01"),
+    new Zone("Medium", new Vector(-Number.MAX_SAFE_INTEGER/4, -15000), new Vector(Number.MAX_SAFE_INTEGER/2, 10000), {coinMultiplier: 2, platformWidth: 70, platformSpeed: {min: -0.75, max: 0.75}}, true, "#ff01"),
+    new Zone("Hard", new Vector(-Number.MAX_SAFE_INTEGER/4, -30000), new Vector(Number.MAX_SAFE_INTEGER/2, 15000), {coinMultiplier: 4, platformWidth: 60, platformSpeed: {min: -0.75, max: 0.75}}, true, "#f001"),
+    new Zone("Insanity", new Vector(-Number.MAX_SAFE_INTEGER/4, -50000), new Vector(Number.MAX_SAFE_INTEGER/2, 20000), {coinMultiplier: 6, platformWidth: 40, platformSpeed: {min: -1.2, max: 1.2}}, true, "#80f1")
 ];
 
 function updateSetting(s, v) {
@@ -632,7 +632,7 @@ function setup() {
         for (let i = 1; i <= Math.round(zone.size.y) / 80; i++) {
             new Platform(new Vector((Math.random() * 800) - 400, zone.position.y + zone.size.y - (i * 80)), 
             new Vector(zone.attributes.platformWidth, 10), "#e0e0e0", 
-            new Vector((Math.random() * (zone.attributes.platformSpeed.max - zone.attributes.platformSpeed.min)) + zone.attributes.platformSpeed.min));
+            new Vector((Math.random() * (zone.attributes.platformSpeed.max - zone.attributes.platformSpeed.min)) + zone.attributes.platformSpeed.min), 100);
         }
     }
 
@@ -648,7 +648,7 @@ function clamp(value, min, max) {
 }
 
 function drawGraph() {
-    ctx.fillStyle = "#0002";
+    ctx.fillStyle = "#0001";
     for (let _x = 0; _x < Math.floor(cW + 50 / GRID_SIZE); _x++) {
         let offset = cameraOffset.x % GRID_SIZE;
         ctx.fillRect((_x * GRID_SIZE) + offset, 0, 1, cH);
@@ -765,10 +765,6 @@ function draw() {
     ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, cW, cH);
 
-    ctx.fillStyle = "#0eb";
-    ctx.font = "62px bungee";
-    ctx.fillText("LEADER:", 40, 80);
-
     drawGraph();
 
     for (let i = objects.length - 1; i > 0; i--) {
@@ -849,6 +845,15 @@ function draw() {
         if (newRay.hit) {
             centerOfPlayer.addVector(cameraOffset).connect(newRay.position.addVector(cameraOffset), "#fff");
         }
+    } else {
+        ctx.fillStyle = "#aaa";
+        ctx.font = "62px bungee";
+        ctx.fillText("LEADER:", 40, 80);
+        ctx.fillStyle = inLead.color;
+        ctx.fillRect(40, 120, 80, 80);
+        ctx.font = "20px bungee";
+        ctx.fillText(`${inLead.name + (inLead.name == player.name ? " (YOU)" : "")}`, 140, 140);
+        ctx.fillText(`${Math.round(Math.abs(inLead.position.y)/10)}`, 140, 170);
     }
 
     ctx.fillStyle = "#fff";
@@ -865,6 +870,9 @@ function loop(t) {
         if (gp.position.y < inLead.position.y) {
             inLead = gp;
         }
+    }
+    if (player.position.y < inLead.position.y) {
+        inLead = player;
     }
 
     score = Math.floor(Math.abs(player.position.y + 20) / 10);
@@ -1005,7 +1013,8 @@ coinStatDisplay.textContent = coins.toLocaleString();
 
 // Multiplayer handling below
 
-var ws = new WebSocket("ws://localhost:3036");
+// var ws = new WebSocket("ws://localhost:3036");
+var ws = new WebSocket("https://zlww6zc0-3036.usw2.devtunnels.ms/");
 var selfID;
 
 let requestData = {
