@@ -20,6 +20,7 @@ const DASH_STAMINA_COST = 100;
 const AIR_STRAFING_SPEED_MULTIPLIER = 0.75;
 const BASE_TIMELINE_FRAMERATE = 60;
 const GRID_SIZE = 100;
+const TARGET_UPS = 60;
 
 let cW = canvas.width = window.innerWidth;
 let cH = canvas.height = window.innerHeight;
@@ -63,7 +64,6 @@ var keyStates = {};
 var currHighScore = 0;
 var coins = 0;
 var score = 0;
-var nextID = 0;
 var cameraSubject = null;
 var dashLineSpan = 200;
 var dashGuideScale = 1;
@@ -296,11 +296,10 @@ function checkLineIntersection(startPos, endPos, obj) {
     }
 }
 
-let spawnpoint = new Vector(0, -120);
+let spawnpoint = new Vector(0, -60);
 
 class Player {
     constructor(position, color) {
-        this.id = nextID;
         this.position = position ? position : new Vector(cW / 2, cH / 2);
         this.velocity = new Vector();
         this.health = {
@@ -322,7 +321,6 @@ class Player {
         this.size = new Vector(20, 20);
         this.zone = null;
         this.zIndex = 100;
-        nextID++;
     }
 
     jump() {
@@ -347,6 +345,27 @@ class Player {
     setSpawnpoint(v) {
         if (!v) return;
         spawnpoint = v;
+    }
+}
+
+class GhostPlayer {
+    static instances = [];
+
+    constructor(uuid, name) {
+        this.uuid = uuid;
+        this.name = name;
+        this.size = new Vector(20, 20);
+        this.color = `hsl(${Math.random() * 360}, 100%, 40%)`;
+        this.currPosition = new Vector();
+        this.targetPosition = new Vector();
+        GhostPlayer.instances.push(this);
+    }
+
+    static getByUUID(uuid) {
+        for (let gp of GhostPlayer.instances) {
+            if (gp.uuid == uuid) return gp;
+        }
+        return null;
     }
 }
 
@@ -421,14 +440,12 @@ class Coin {
     static instances = [];
 
     constructor(position, value) {
-        this.id = nextID;
         if (!position || !value) throw console.error("Missing an argument or two.");
         this.position = position;
         this.value = value ? value : 1;
         this.zIndex = 98;
         Point.instances.push(this);
         objects.push(this);
-        nextID++;
     }
 
     static clearInstances() {
@@ -450,7 +467,6 @@ class Dialog {
     static instances = [];
 
     constructor(text, color, position) {
-        this.id = nextID;
         if (!text) return console.error("No text provided.");
         this.text = text;
         this.color = color ? color : "#fff";
@@ -459,7 +475,6 @@ class Dialog {
         this.zIndex = 97;
         Dialog.instances.push(this);
         objects.push(this);
-        nextID++;
     }
 
     static clearInstances() {
@@ -481,7 +496,6 @@ class Platform {
     static instances = [];
 
     constructor(position, size, color, velocity, zIndex) {
-        this.id = nextID;
         this.position = position ? position : new Vector();
         this.velocity = velocity ? velocity : new Vector();
         this.size = size;
@@ -489,7 +503,6 @@ class Platform {
         this.zIndex = zIndex ? zIndex : 1;
         Platform.instances.push(this);
         objects.push(this);
-        nextID++;
     }
 
     static clearInstances() {
@@ -511,14 +524,12 @@ class Checkpoint {
     static instances = [];
 
     constructor(position, size) {
-        this.id = nextID;
         this.position = position ? position : new Vector();
         this.size = size;
         this.color = "#f09";
         this.zIndex = 96;
         Checkpoint.instances.push(this);
         objects.push(this);
-        nextID++;
     }
 
     static clearInstances() {
@@ -540,7 +551,6 @@ class Bouncepad {
     static instances = [];
 
     constructor(position, power, size, color) {
-        this.id = nextID;
         this.position = position ? position : new Vector();
         this.velocity = new Vector();
         this.power = power ? Math.max(0, power) : 10;
@@ -549,7 +559,6 @@ class Bouncepad {
         this.zIndex = 95;
         Platform.instances.push(this);
         objects.push(this);
-        nextID++;
     }
 
     static clearInstances() {
@@ -604,9 +613,9 @@ function reset() {
 }
 
 function setup() {
-    player = new Player(spawnpoint.add(-10, -20), "#ffaa00");
+    player = new Player(spawnpoint.add(-10, -20), "#f00");
     cameraSubject = player;
-    
+
     // Floor
     new Platform(new Vector(-(Number.MAX_SAFE_INTEGER/2), 0), new Vector(Number.MAX_SAFE_INTEGER, cH), "#eaeaea", null, 2);
 
@@ -718,6 +727,11 @@ function updatePhysics(deltaTime) {
         }
     }
 
+    for (let gp of GhostPlayer.instances) {
+        gp.currPosition.x += (gp.targetPosition.x - gp.currPosition.x) * 0.15;
+        gp.currPosition.y += (gp.targetPosition.y - gp.currPosition.y) * 0.15;
+    }
+
     for (let p of Platform.instances) {
         p.position = p.position.addVector(p.velocity);
         if (p.velocity.y != 0 && p.position.y > 0) {
@@ -786,20 +800,27 @@ function draw() {
                  player.size.x + Math.max(-8, -playerSizeSquashX), 
                  player.size.y + Math.max(-8, -playerSizeSquashY));
 
+    for (let gp of GhostPlayer.instances) {
+        ctx.fillStyle = gp.color;
+        ctx.fillRect(gp.currPosition.x + cameraOffset.x, gp.currPosition.y + cameraOffset.y,
+                     gp.size.x, gp.size.y);
+        ctx.font = "16px code";
+        ctx.fillText(gp.name, gp.currPosition.x + cameraOffset.x - 
+                     ctx.measureText(gp.name).width/2 + gp.size.x/2, 
+                     gp.currPosition.y + cameraOffset.y - 20);
+    }
+
     ctx.fillStyle = "#08f";
     ctx.fillRect(0, cH - 5, (player.stamina.value/player.stamina.max)*cW, 5);
 
-    ctx.fillStyle = "pink";
-    ctx.fillRect(0, -score, cW, 2);
-
-    ctx.fillStyle = "red";
-    ctx.beginPath();
-    ctx.ellipse(currMousePos.x, currMousePos.y, 5, 5, 0, 0, Math.PI * 2);
+    // ctx.fillStyle = "red";
+    // ctx.beginPath();
+    // ctx.ellipse(currMousePos.x, currMousePos.y, 5, 5, 0, 0, Math.PI * 2);
     
-    let midway = new Vector((currMousePos.x - player.position.x)/2, (currMousePos.y - player.position.y)/2);
-    ctx.ellipse(currMousePos.x + midway.x, currMousePos.y + midway.y, 5, 5, 0, 0, Math.PI * 2);
+    // let midway = new Vector((currMousePos.x - player.position.x)/2, (currMousePos.y - player.position.y)/2);
+    // ctx.ellipse(midway.x, midway.y, 5, 5, 0, 0, Math.PI * 2);
 
-    ctx.fill();
+    // ctx.fill();
 
     if (settings.debug) {
         ctx.fillStyle = "#0008";
@@ -810,6 +831,21 @@ function draw() {
         ctx.fillText(`Vel y: ${round(player.velocity.y, 2)}`, 50, 104);
         ctx.fillText(`Pos x: ${round(player.position.x, 2)}`, 50, 140);
         ctx.fillText(`Pos y: ${round(player.position.y, 2)}`, 50, 176);
+
+        ctx.fillStyle = "#0008";
+        ctx.fillRect(40, 230, 410, 200);
+        ctx.fillStyle = "#fff";
+        ctx.font = "18px code";
+        ctx.fillText(`${selfID}`, 50, 260);
+
+        var listofIDs = '';
+
+        for (let gp of GhostPlayer.instances) {
+            listofIDs += `${gp.uuid}\n`;
+        }
+
+        ctx.fillStyle = "#bbd";
+        ctx.fillText(`${listofIDs}`, 50, 300);
 
         let centerOfPlayer = player.position.addVector(player.size.mul(0.5, 0.5));
         ctx.lineWidth = 3;
@@ -846,6 +882,7 @@ function loop(t) {
     staminaStatDisplay.textContent = Math.round(player.stamina.value);
 
     objects = objects.filter(o => !o.toBeDestroyed);
+    GhostPlayer.instances = GhostPlayer.instances.filter(c => !c.toBeDestroyed);
 
     if (deltaTime) {
         if (!player) return;
@@ -907,6 +944,7 @@ function start() {
 
 setup();
 loop();
+start();
 
 canvas.onmousemove = (ev) => {
     const bb = canvas.getBoundingClientRect();
@@ -964,3 +1002,64 @@ window.addEventListener("resize", () => {
 const coinsLastSaved = cookie.get("coins");
 coins = coinsLastSaved ? Number.parseFloat(coinsLastSaved) : 0;
 coinStatDisplay.textContent = coins.toLocaleString();
+
+
+
+
+// Multiplayer handling below
+
+var ws = new WebSocket("ws://10.0.0.25:3036");
+var selfID;
+var selfName = `Player${Math.floor(Math.random()*255)}`;
+
+let requestData = {
+    "header": {
+        "eventName": "requestJoin",
+    },
+    "body": {
+        "name": selfName
+    }
+};
+
+ws.onopen = () => {
+    setTimeout(()=>{ws.send(JSON.stringify(requestData));}, 20);
+
+    ws.addEventListener('message', (packet) => {
+        const data = JSON.parse(packet.data);
+        if (data.header.eventName == 'accept') {
+            selfID = data.body.newID;
+            for (let plr of data.body.players) {
+                if (plr.uuid != selfID) {
+                    new GhostPlayer(plr.uuid, plr.name);
+                }
+            }
+        } else if (data.header.eventName == 'update') {
+            for (let plr of data.body.players) {
+                let ghostPlayerObject = GhostPlayer.getByUUID(plr.uuid);
+                if (!ghostPlayerObject) {
+                    new GhostPlayer(plr.uuid, plr.name);
+                }
+                ghostPlayerObject.targetPosition = plr.position;
+            }
+        } else if (data.header.eventName == 'playerDisconnected') {
+            let disconnectedPlayer = GhostPlayer.getByUUID(data.body.uuid);
+            disconnectedPlayer.toBeDestroyed = true;
+        }
+    });
+
+    function fireUpdate() {
+        if (!player || ws.readyState !== WebSocket.OPEN) return;
+        const data = {
+            "header": {
+                "eventName": "player2Server"
+            },
+            "body": {
+                "uuid": selfID,
+                "position": player.position
+            }
+        };
+        ws.send(JSON.stringify(data));
+    }
+
+    setInterval(fireUpdate, (1000/TARGET_UPS));
+}
