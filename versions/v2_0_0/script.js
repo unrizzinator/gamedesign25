@@ -620,7 +620,7 @@ function setup() {
     cameraSubject = player;
 
     // Floor
-    new Platform(new Vector(-(Number.MAX_SAFE_INTEGER/2), 0), new Vector(Number.MAX_SAFE_INTEGER, cH), "#eaeaea", null, 2);
+    new Platform(new Vector(-(Number.MAX_SAFE_INTEGER/2), 0), new Vector(Number.MAX_SAFE_INTEGER, cH), "#fff", null, 2);
 
     // Walls
     new Platform(new Vector(-2000 - 100, -Number.MAX_SAFE_INTEGER/4), new Vector(100, Number.MAX_SAFE_INTEGER/2), "#fff0");
@@ -809,6 +809,25 @@ function draw() {
     ctx.fillStyle = "#08f";
     ctx.fillRect(0, cH - 5, (player.stamina.value/player.stamina.max)*cW, 5);
 
+    if (keyStates["tab"]) {
+        const center = {x: cW/2, y: cH/2};
+        const playerCount = GhostPlayer.instances.length + 1;
+        const rowHeight = 30;
+        ctx.fillStyle = "#0004";
+        ctx.fillRect(center.x - 150, center.y - (playerCount*rowHeight)/2, 300, playerCount*rowHeight);
+        const topAnchor = center.y - (playerCount * rowHeight)/2 + 22.5;
+        const selfHeight = Math.round(Math.abs(player.position.y)/10);
+        ctx.fillStyle = "#fff";
+        ctx.font = "20px bungee";
+        ctx.fillText(player.name + " (YOU)", center.x - 130, topAnchor);
+        ctx.fillText(selfHeight.toString(), center.x + 130 - ctx.measureText(selfHeight.toString()).width, topAnchor);
+        for (let i = 0; i < GhostPlayer.instances.length; i++) {
+            const gpHeight = Math.round(Math.abs(GhostPlayer.instances[i].position.y)/10);
+            ctx.fillText(GhostPlayer.instances[i].name, center.x - 130, topAnchor + (i * rowHeight) + rowHeight);
+            ctx.fillText(gpHeight.toString(), center.x + 130 - ctx.measureText(gpHeight.toString()).width, topAnchor + (i * rowHeight) + rowHeight);
+        }
+    }
+
     if (settings.debug) {
         ctx.fillStyle = "#0008";
         ctx.fillRect(40, 40, 200, 150);
@@ -846,7 +865,7 @@ function draw() {
             centerOfPlayer.addVector(cameraOffset).connect(newRay.position.addVector(cameraOffset), "#fff");
         }
     } else {
-        ctx.fillStyle = "#aaa";
+        ctx.fillStyle = "#0004";
         ctx.font = "62px bungee";
         ctx.fillText("LEADER:", 40, 80);
         ctx.fillStyle = inLead.color;
