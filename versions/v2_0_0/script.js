@@ -69,6 +69,7 @@ var dashLineSpan = 200;
 var dashGuideScale = 1;
 var zoneCoinMultiplier = 1;
 var shootLoop;
+var inLead;
 
 var stats = {
     stamina: {
@@ -300,6 +301,7 @@ let spawnpoint = new Vector(0, -60);
 
 class Player {
     constructor(position, color) {
+        this.name = `Player${Math.floor(Math.random()*255)}`;
         this.position = position ? position : new Vector(cW / 2, cH / 2);
         this.velocity = new Vector();
         this.health = {
@@ -357,7 +359,7 @@ class GhostPlayer {
         this.size = new Vector(20, 20);
         this.color = `hsl(${Math.random() * 360}, 100%, 40%)`;
         this.currPosition = new Vector();
-        this.targetPosition = new Vector();
+        this.position = new Vector();
         GhostPlayer.instances.push(this);
     }
 
@@ -614,6 +616,7 @@ function reset() {
 
 function setup() {
     player = new Player(spawnpoint.add(-10, -20), "#f00");
+    inLead = player;
     cameraSubject = player;
 
     // Floor
@@ -728,8 +731,8 @@ function updatePhysics(deltaTime) {
     }
 
     for (let gp of GhostPlayer.instances) {
-        gp.currPosition.x += (gp.targetPosition.x - gp.currPosition.x) * 0.15;
-        gp.currPosition.y += (gp.targetPosition.y - gp.currPosition.y) * 0.15;
+        gp.currPosition.x += (gp.position.x - gp.currPosition.x) * 0.15;
+        gp.currPosition.y += (gp.position.y - gp.currPosition.y) * 0.15;
     }
 
     for (let p of Platform.instances) {
@@ -762,12 +765,9 @@ function draw() {
     ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, cW, cH);
 
-    ctx.fillStyle = "#ffffff40";
-    ctx.font = "120px code";
-    let st = score.toString();
-    for (let i = 0; i < st.length; i++) {
-        ctx.fillText(st.charAt(i), 50, 120 + (i*120));
-    }
+    ctx.fillStyle = "#0eb";
+    ctx.font = "62px bungee";
+    ctx.fillText("LEADER:", 40, 80);
 
     drawGraph();
 
@@ -812,15 +812,6 @@ function draw() {
 
     ctx.fillStyle = "#08f";
     ctx.fillRect(0, cH - 5, (player.stamina.value/player.stamina.max)*cW, 5);
-
-    // ctx.fillStyle = "red";
-    // ctx.beginPath();
-    // ctx.ellipse(currMousePos.x, currMousePos.y, 5, 5, 0, 0, Math.PI * 2);
-    
-    // let midway = new Vector((currMousePos.x - player.position.x)/2, (currMousePos.y - player.position.y)/2);
-    // ctx.ellipse(midway.x, midway.y, 5, 5, 0, 0, Math.PI * 2);
-
-    // ctx.fill();
 
     if (settings.debug) {
         ctx.fillStyle = "#0008";
@@ -869,6 +860,12 @@ function loop(t) {
     deltaTime = (t - lastDeltaTime)/1000;
     deltaTime = Math.min(deltaTime, 0.016) * 120;
     lastDeltaTime = t;
+
+    for (let gp of GhostPlayer.instances) {
+        if (gp.position.y < inLead.position.y) {
+            inLead = gp;
+        }
+    }
 
     score = Math.floor(Math.abs(player.position.y + 20) / 10);
     if (score > 25 && score - currHighScore > 0) {
@@ -1008,16 +1005,15 @@ coinStatDisplay.textContent = coins.toLocaleString();
 
 // Multiplayer handling below
 
-var ws = new WebSocket("ws://10.0.0.25:3036");
+var ws = new WebSocket("ws://localhost:3036");
 var selfID;
-var selfName = `Player${Math.floor(Math.random()*255)}`;
 
 let requestData = {
     "header": {
         "eventName": "requestJoin",
     },
     "body": {
-        "name": selfName
+        "name": player.name
     }
 };
 
@@ -1039,7 +1035,7 @@ ws.onopen = () => {
                 if (!ghostPlayerObject) {
                     new GhostPlayer(plr.uuid, plr.name);
                 }
-                ghostPlayerObject.targetPosition = plr.position;
+                ghostPlayerObject.position = plr.position;
             }
         } else if (data.header.eventName == 'playerDisconnected') {
             let disconnectedPlayer = GhostPlayer.getByUUID(data.body.uuid);
