@@ -56,7 +56,7 @@ var settings = {
     debug: false,
 };
 
-var backgroundColor = "#fafafa";
+var backgroundColor = "hsl(0, 0.00%, 98.00%)";
 var hasStarted = false;
 var gameFocused = false;
 var player = null;
@@ -839,15 +839,15 @@ function draw() {
         ctx.fillStyle = "#0004";
         ctx.fillRect(center.x - 150, center.y - (playerCount*rowHeight)/2, 300, playerCount*rowHeight);
         const topAnchor = center.y - (playerCount * rowHeight)/2 + 22.5;
-        const selfHeight = Math.round(Math.abs(player.position.y)/10);
+        const selfHeight = Math.round(Math.abs(player.position.x)/10);
         ctx.fillStyle = "#fff";
         ctx.font = "20px bungee";
         ctx.fillText(player.name + " (YOU)", center.x - 130, topAnchor);
         ctx.fillText(selfHeight.toString(), center.x + 130 - ctx.measureText(selfHeight.toString()).width, topAnchor);
         for (let i = 0; i < GhostPlayer.instances.length; i++) {
-            const gpHeight = Math.round(Math.abs(GhostPlayer.instances[i].position.y)/10);
+            const gpDist = Math.round(Math.abs(GhostPlayer.instances[i].position.x)/10);
             ctx.fillText(GhostPlayer.instances[i].name, center.x - 130, topAnchor + (i * rowHeight) + rowHeight);
-            ctx.fillText(gpHeight.toString(), center.x + 130 - ctx.measureText(gpHeight.toString()).width, topAnchor + (i * rowHeight) + rowHeight);
+            ctx.fillText(gpDist.toString(), center.x + 130 - ctx.measureText(gpDist.toString()).width, topAnchor + (i * rowHeight) + rowHeight);
         }
     }
 
@@ -917,13 +917,8 @@ function loop(t) {
         inLead = player;
     }
 
-    score = Math.floor(Math.abs(player.position.y + 20) / 10);
-    if (score > 25 && score - currHighScore > 0) {
-        coins += (score - currHighScore) * zoneCoinMultiplier;
-        cookie.set("coins", coins);
-        cookie.set("highscore", score);
-        currHighScore = score;
-    }
+    if (score > currHighScore) currHighScore = score;
+    
     coinStatDisplay.textContent = coins.toLocaleString();
     healthStatDisplay.textContent = Math.round(player.health.value);
     staminaStatDisplay.textContent = Math.round(player.stamina.value);
