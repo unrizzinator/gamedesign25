@@ -937,8 +937,8 @@ function loop(t) {
         var targetCameraOffset = new Vector(
             -(cameraSubject.position.x + cameraSubject.size.x / 2) + cW / 2,
             -(cameraSubject.position.y + cameraSubject.size.y / 2) + cH / 2);
-        cameraOffset.x += (targetCameraOffset.x - cameraOffset.x) * 0.03;
-        cameraOffset.y += (targetCameraOffset.y - cameraOffset.y) * 0.1;
+        cameraOffset.x += (targetCameraOffset.x - cameraOffset.x) * 0.1; // Default 0.03
+        cameraOffset.y += (targetCameraOffset.y - cameraOffset.y) * 0.1; // Default 0.1
 
         updatePhysics(deltaTime);
         draw();
