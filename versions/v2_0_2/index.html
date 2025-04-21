@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="../../src/tab.ico" type="image/x-icon">
+    <link rel="stylesheet" href="styles.css">
+    <script src="script.js" defer></script>
+    <title>Game</title>
+</head>
+<body class="dotted-bg">
+    <button class="fs" onclick="goFullscreen()"></button>
+    <div id="tbg"></div>
+    <div class="container">
+        <div class="game-container">
+            <div class="ui">
+                <div class="stats">
+                    <div class="stat currency" id="coinStat">
+                        <img src="../../src/img/Coin128x128.png">
+                        <div class="value" id="coinStatDisplay">0</div>
+                    </div>
+                    <div class="stat health" id="healthStat">
+                        <img src="../../src/img/Heart128x128.png">
+                        <div class="value" id="healthStatDisplay">0</div>
+                    </div>
+                    <div class="stat stamina" id="staminaStat">
+                        <img src="../../src/img/Stamina128x128.png">
+                        <div class="value" id="staminaStatDisplay">0</div>
+                    </div>
+                </div>
+                <div class="window-container">
+                    <div class="window active" noCurrency windowId="mainMenu">
+                        <h1>idk</h1>
+                        <button class="coolBtn" onclick="start()">Start</button>
+                    </div>
+                    <div class="window" windowId="pauseMenu">
+                        <div class="button-list">
+                            <button class="coolBtn" onclick="exitWindow()">Resume</button>
+                            <button class="coolBtn" onclick="openWindow('shopMenu')">Shop</button>
+                        </div>
+                    </div>
+                    <div class="window" windowId="shopMenu">
+                        <div id="upgrades"></div>
+                        <button class="coolBtn" onclick="exitWindow()">Return</button>
+                    </div>
+                </div>
+            </div>
+            <canvas></canvas>
+        </div>
+    </div>
+</body>
+</html>
