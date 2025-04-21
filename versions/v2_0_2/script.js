@@ -715,78 +715,6 @@ function setup() {
     new Platform(new Vector(3000, 0), new Vector(100000, cH), "#fff", null, 2);
 
     objects = objects.sort((a, b) => a.zIndex - b.zIndex);
-
-
-    // TEMPORARY ---------------------------------------------------------------------------------------------------
-    for (let i = 0; i < 10; i++) {
-        let _tmp = new Platform(new Vector(100, -100 + (-i * 100)), new Vector(100, 10), "#80f", null, null);
-        new Tween({
-            from: i % 2 == 0 ? -200 : 100,
-            to: i % 2 == 0 ? 100 : -200,
-            duration: 10000,
-            easing: Tween.linear,
-            onUpdate: (val) => {
-                _tmp.position.x = val;
-            },
-            repeat: Infinity,
-            backwards: true
-        });
-    }
-
-    for (let i = 0; i < 10; i++) {
-        let _tmp = new Platform(new Vector(100, -100 + (-i * 100)), new Vector(100, 10), "#80f", null, null);
-        new Tween({
-            from: i % 2 == 0 ? 700 : 400,
-            to: i % 2 == 0 ? 400 : 700,
-            duration: 1000,
-            easing: Tween.easeInOutQuad,
-            onUpdate: (val) => {
-                _tmp.position.x = val;
-            },
-            repeat: Infinity,
-            backwards: true
-        });
-    }
-
-    let _tmp = new Platform(new Vector(-400, -200), new Vector(100, 100), "#80f", null, null);
-    new Tween({
-        from: 0,
-        to: 360,
-        duration: 2000,
-        easing: Tween.linear,
-        onUpdate: (val) => {
-            _tmp.color = `hsl(${val}, 100%, 50%)`;
-        },
-        repeat: Infinity,
-        backwards: true
-    });
-
-    let _tmp2 = new Platform(new Vector(-600, -200), new Vector(100, 100), "#80f", null, null);
-    new Tween({
-        from: 0,
-        to: 360,
-        duration: 500,
-        easing: Tween.linear,
-        onUpdate: (val) => {
-            _tmp2.color = `hsl(${val}, 100%, 50%)`;
-        },
-        repeat: Infinity,
-        backwards: true
-    });
-
-    let _tmp3 = new Platform(new Vector(-600, -100), new Vector(20, 100), "#80f", null, null);
-    new Tween({
-        from: -600,
-        to: -320,
-        duration: 1000,
-        easing: Tween.linear,
-        onUpdate: (val) => {
-            _tmp3.position.x = val;
-        },
-        repeat: Infinity,
-        backwards: true
-    });
-    // END TEMPORARY ---------------------------------------------------------------------------------------------------
 }
 
 function toRad(deg) {
@@ -831,11 +759,9 @@ function checkCollision(player, rect) {
 
         if (smallestOverlap === overlapRight/* && player.velocity.x > 0*/) {
             player.position.x = rect.position.x - player.size.x;
-            // player.velocity.x = 0;
         } 
         else if (smallestOverlap === overlapLeft/* && player.velocity.x < 0*/) {
             player.position.x = rect.position.x + rect.size.x;
-            // player.velocity.x = 0;
         } 
         else if (smallestOverlap === overlapDown && player.velocity.y > 0) {
             player.position.y = rect.position.y - player.size.y;
