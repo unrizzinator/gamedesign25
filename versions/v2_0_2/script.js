@@ -7,8 +7,6 @@ const coinStat = ui.querySelector('#coinStat');
 const coinStatDisplay = coinStat.querySelector('#coinStatDisplay');
 const healthStat = ui.querySelector('#healthStat');
 const healthStatDisplay = healthStat.querySelector('#healthStatDisplay');
-const staminaStat = ui.querySelector('#staminaStat');
-const staminaStatDisplay = staminaStat.querySelector('#staminaStatDisplay');
 const upgradesList = document.querySelector('#upgrades');
 
 const canvas = document.querySelector('canvas');
@@ -57,7 +55,7 @@ var settings = {
     debug: false,
 };
 
-var backgroundColor = "hsl(0, 0.00%, 98.00%)";
+var backgroundColor = "hsl(220, 20.00%, 10.00%)";
 var hasStarted = false;
 var gameFocused = false;
 var player = null;
@@ -955,14 +953,13 @@ function draw() {
             centerOfPlayer.addVector(cameraOffset).connect(newRay.position.addVector(cameraOffset), "#fff");
         }
     } else {
-        ctx.fillStyle = "#0004";
+        ctx.fillStyle = "#fff";
         ctx.font = "62px bungee";
         ctx.fillText("LEADER:", 40, 80);
         ctx.fillStyle = inLead.color;
         ctx.fillRect(40, 120, 80, 80);
         ctx.font = "20px bungee";
         ctx.fillText(`${inLead.name + (inLead.name == player.name ? " (YOU)" : "")}`, 140, 140);
-        // ctx.fillText(`${Math.round(Math.abs(inLead.position.x)/10)}`, 140, 170);
     }
 
     ctx.fillStyle = "#fff";
@@ -988,7 +985,6 @@ function loop(t) {
     
     coinStatDisplay.textContent = coins.toLocaleString();
     healthStatDisplay.textContent = Math.round(player.health.value);
-    staminaStatDisplay.textContent = Math.round(player.stamina.value);
 
     objects = objects.filter(o => !o.toBeDestroyed);
     GhostPlayer.instances = GhostPlayer.instances.filter(c => !c.toBeDestroyed);
@@ -1029,7 +1025,6 @@ function exitWindow() {
     gameFocused = true;
     coinStat.style.opacity = 1;
     healthStat.style.opacity = 1;
-    staminaStat.style.opacity = 1;
 }
 
 function openWindow(windowId) {
@@ -1044,7 +1039,6 @@ function openWindow(windowId) {
     }
     coinStat.style.opacity = 1;
     healthStat.style.opacity = 0;
-    staminaStat.style.opacity = 0;
 }
 
 function toggleMenu() {
@@ -1057,7 +1051,6 @@ function start() {
     hasStarted = true;
     coinStat.style.opacity = 1;
     healthStat.style.opacity = 1;
-    staminaStat.style.opacity = 1;
 }
 
 setup();
@@ -1119,8 +1112,6 @@ window.addEventListener("resize", () => {
 const coinsLastSaved = cookie.get("coins");
 coins = coinsLastSaved ? Number.parseFloat(coinsLastSaved) : 0;
 coinStatDisplay.textContent = coins.toLocaleString();
-
-
 
 
 // Multiplayer handling below
