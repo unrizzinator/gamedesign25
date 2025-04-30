@@ -62,19 +62,24 @@ function serverUpdate() {
     }
 }
 
+function isSupportedVersion(version) {
+    for (let v of SUPPORTED_VERSIONS) {
+        if (v == version) return true;
+    }
+    return false;
+}
+
 wss.on('connection', (socket) => {
     socket.addEventListener("message", (packet) => {
         const data = JSON.parse(packet.data);
-
         if (data.header.eventName == 'requestJoin') {
-            console.log("version: " + data.header.version);
-            if (!data.header.version || !SUPPORTED_VERSIONS.find(data.header.version)) {
+            if (!data.body.version || !isSupportedVersion(data.body.version)) {
                 let res = {
                     "header": {
                         "eventName": "reject"
                     },
                     "body": {
-                        "reason": data.header.version ? "Client is out of date." : "No version was provided."
+                        "reason": data.body.version ? "Client is out of date." : "No version was provided."
                     }
                 }
                 socket.send(JSON.stringify(res));
