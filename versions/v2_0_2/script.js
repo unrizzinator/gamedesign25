@@ -55,7 +55,7 @@ var settings = {
     debug: false,
 };
 
-var backgroundColor = "hsl(220, 20.00%, 10.00%)";
+var backgroundColor = "hsl(220, 20.00%, 70.00%)";
 var hasStarted = false;
 var gameFocused = false;
 var player = null;
@@ -401,7 +401,7 @@ class Player extends Tag {
         this.friction = 0.09;
         this.isGrounded = false;
         this.isDashing = false;
-        this.color = color ? color : "#f00";
+        this.color = `hsl(${Math.random()*360}, 50%, 50%)`;
         this.size = new Vector(20, 20);
         this.zone = null;
         this.zIndex = 100;
@@ -1125,7 +1125,9 @@ let requestData = {
         "eventName": "requestJoin",
     },
     "body": {
-        "name": player.name
+        "name": player.name,
+        "color": player.color,
+        "version": "2.0.2"
     }
 };
 
@@ -1141,6 +1143,8 @@ ws.onopen = () => {
                     new GhostPlayer(plr.uuid, plr.name);
                 }
             }
+        } else if (data.header.eventName == 'reject') {
+            console.log(data.body.reason);
         } else if (data.header.eventName == 'update') {
             for (let plr of data.body.players) {
                 let ghostPlayerObject = GhostPlayer.getByUUID(plr.uuid);

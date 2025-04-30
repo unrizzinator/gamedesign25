@@ -1,3 +1,5 @@
+const SUPPORTED_VERSIONS = ['2.0.2']
+
 const ws = require('ws');
 const { v4 } = require('uuid');
 
@@ -17,9 +19,10 @@ class Player {
 
     toBeDestroyed = false;
 
-    constructor(socket, name) {
+    constructor(socket, name, color) {
         this.uuid = v4();
         this.name = name;
+        this.color = color;
         this.socket = socket;
         this.position = new Vector();
         Player.instances.push(this);
@@ -62,8 +65,24 @@ function serverUpdate() {
 wss.on('connection', (socket) => {
     socket.addEventListener("message", (packet) => {
         const data = JSON.parse(packet.data);
+
         if (data.header.eventName == 'requestJoin') {
-            let newPlr = new Player(socket, data.body.name);
+            console.log("version: " + data.header.version);
+            if (!data.header.version || !SUPPORTED_VERSIONS.find(data.header.version)) {
+                let res = {
+                    "header": {
+                        "eventName": "reject"
+                    },
+                    "body": {
+                        "reason": data.header.version ? "Client is out of date." : "No version was provided."
+                    }
+                }
+                socket.send(JSON.stringify(res));
+                socket.close();
+                return;
+            }
+
+            let newPlr = new Player(socket, data.body.name, data.body.color);
             
             var res = {
                 "header": {
