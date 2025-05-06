@@ -1059,7 +1059,8 @@ let requestData = {
         "eventName": "requestJoin",
     },
     "body": {
-        "name": player.name
+        "name": player.name,
+        "version": "2.0.1"
     }
 };
 

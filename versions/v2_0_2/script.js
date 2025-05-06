@@ -55,7 +55,7 @@ var settings = {
     debug: false,
 };
 
-var backgroundColor = "hsl(220, 20.00%, 70.00%)";
+var backgroundColor = "hsl(220, 20.00%, 90.00%)";
 var hasStarted = false;
 var gameFocused = false;
 var player = null;
@@ -378,9 +378,10 @@ function checkLineIntersection(startPos, endPos, obj) {
     }
 }
 
-let spawnpoint = new Vector(0, -60);
+let spawnpoint = new Vector(-10, -400);
 
 class Player extends Tag {
+
     constructor(position, color) {
         super();
         this.name = `Player${Math.floor(Math.random()*255)}`;
@@ -401,8 +402,8 @@ class Player extends Tag {
         this.friction = 0.09;
         this.isGrounded = false;
         this.isDashing = false;
-        this.color = `hsl(${Math.random()*360}, 50%, 50%)`;
         this.size = new Vector(20, 20);
+        this.color = '#f00';
         this.zone = null;
         this.zIndex = 100;
     }
@@ -435,11 +436,11 @@ class Player extends Tag {
 class GhostPlayer {
     static instances = [];
 
-    constructor(uuid, name) {
+    constructor(uuid, name, color) {
         this.uuid = uuid;
         this.name = name;
         this.size = new Vector(20, 20);
-        this.color = `hsl(${Math.random() * 360}, 100%, 40%)`;
+        this.color = color;
         this.currPosition = new Vector();
         this.position = new Vector();
         GhostPlayer.instances.push(this);
@@ -694,13 +695,11 @@ function cleanup() {
 function reset() {
     cleanup();
     setup();
-    cameraSubject = player;
+    player.position = spawnpoint;
 }
 
 function setup() {
-    player = new Player(spawnpoint.add(-10, -20), "#f00");
     inLead = player;
-    cameraSubject = player;
 
     // Floor
     new Platform(new Vector(-100000, 0), new Vector(101000, cH), "#fff", null, 2);
@@ -1052,7 +1051,7 @@ function start() {
     coinStat.style.opacity = 1;
     healthStat.style.opacity = 1;
 }
-
+player = new Player(spawnpoint, "#f00");
 setup();
 loop();
 start();
@@ -1126,7 +1125,6 @@ let requestData = {
     },
     "body": {
         "name": player.name,
-        "color": player.color,
         "version": "2.0.2"
     }
 };
@@ -1138,9 +1136,10 @@ ws.onopen = () => {
         const data = JSON.parse(packet.data);
         if (data.header.eventName == 'accept') {
             selfID = data.body.newID;
+            player.color = data.body.newColor;
             for (let plr of data.body.players) {
                 if (plr.uuid != selfID) {
-                    new GhostPlayer(plr.uuid, plr.name);
+                    new GhostPlayer(plr.uuid, plr.name, plr.color);
                 }
             }
         } else if (data.header.eventName == 'reject') {
@@ -1149,9 +1148,10 @@ ws.onopen = () => {
             for (let plr of data.body.players) {
                 let ghostPlayerObject = GhostPlayer.getByUUID(plr.uuid);
                 if (!ghostPlayerObject) {
-                    new GhostPlayer(plr.uuid, plr.name);
+                    new GhostPlayer(plr.uuid, plr.name, plr.color);
                 }
                 ghostPlayerObject.position = plr.position;
+                ghostPlayerObject.color = plr.color;
             }
         } else if (data.header.eventName == 'playerDisconnected') {
             let disconnectedPlayer = GhostPlayer.getByUUID(data.body.uuid);

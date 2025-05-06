@@ -19,10 +19,10 @@ class Player {
 
     toBeDestroyed = false;
 
-    constructor(socket, name, color) {
+    constructor(socket, name) {
         this.uuid = v4();
         this.name = name;
-        this.color = color;
+        this.color = `hsl(${Math.round(Math.random()*360)}, 80%, 50%)`;
         this.socket = socket;
         this.position = new Vector();
         Player.instances.push(this);
@@ -53,7 +53,8 @@ function serverUpdate() {
                                            .map(p => ({
                                             uuid: p.uuid,
                                             name: p.name,
-                                            position: p.position
+                                            position: p.position,
+                                            color: p.color
                                            }))
             }
         };
@@ -87,7 +88,7 @@ wss.on('connection', (socket) => {
                 return;
             }
 
-            let newPlr = new Player(socket, data.body.name, data.body.color);
+            let newPlr = new Player(socket, data.body.name);
             
             var res = {
                 "header": {
@@ -95,6 +96,7 @@ wss.on('connection', (socket) => {
                 },
                 "body": {
                     "newID": newPlr.uuid,
+                    "newColor": newPlr.color,
                     "players": Player.instances
                 }
             };
